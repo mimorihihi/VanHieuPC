@@ -6,9 +6,23 @@ import Link from "next/link"
 import { ArrowLeft, Save } from "lucide-react"
 import { AdminBtn } from "@/components/ui/button"
 import { FormInput, FormTextarea, FormSelect, FormToggle } from "@/components/ui/form-fields"
+import { ImageUpload } from "@/components/ui/image-upload"
 
 interface Category { id: string; name: string }
 interface Brand { id: string; name: string }
+interface ProductFormState {
+  name: string
+  slug: string
+  description: string
+  price: string
+  sale_price: string
+  stock: string
+  thumbnail_url: string
+  category_id: string
+  brand_id: string
+  is_active: boolean
+  is_featured: boolean
+}
 
 export default function EditProductPage() {
   const router = useRouter()
@@ -17,7 +31,19 @@ export default function EditProductPage() {
 
   const [categories, setCategories] = useState<Category[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
-  const [form, setForm] = useState<Record<string, any>>({})
+  const [form, setForm] = useState<ProductFormState>({
+    name: "",
+    slug: "",
+    description: "",
+    price: "",
+    sale_price: "",
+    stock: "0",
+    thumbnail_url: "",
+    category_id: "",
+    brand_id: "",
+    is_active: true,
+    is_featured: false,
+  })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
@@ -33,17 +59,24 @@ export default function EditProductPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/admin/categories").then(r => r.json()),
-      fetch("/api/admin/brands").then(r => r.json()),
-      fetch(`/api/admin/products/${id}`).then(r => r.json()),
+      fetch("/api/admin/categories").then((r) => r.json()),
+      fetch("/api/admin/brands").then((r) => r.json()),
+      fetch(`/api/admin/products/${id}`).then((r) => r.json()),
     ]).then(([catData, brandData, product]) => {
       setCategories(normalizeOptions(catData.categories ?? []))
       setBrands(normalizeOptions(brandData.brands ?? []))
       setForm({
-        ...product,
+        name: product.name ?? "",
+        slug: product.slug ?? "",
+        description: product.description ?? "",
+        price: product.price?.toString?.() ?? "",
+        sale_price: product.sale_price?.toString?.() ?? "",
+        stock: product.stock?.toString?.() ?? "0",
+        thumbnail_url: product.thumbnail_url ?? "",
         category_id: product.category?.id ?? "",
         brand_id: product.brand?.id ?? "",
-        sale_price: product.sale_price ?? "",
+        is_active: Boolean(product.is_active),
+        is_featured: Boolean(product.is_featured),
       })
       setLoading(false)
     })
@@ -73,7 +106,7 @@ export default function EditProductPage() {
     }
   }
 
-  if (loading) return <div className="load-msg">Loading product…</div>
+  if (loading) return <div className="load-msg">Loading product...</div>
 
   return (
     <div>
@@ -98,44 +131,46 @@ export default function EditProductPage() {
         <div className="form-section">
           <h3 className="form-section-title">Basic Information</h3>
           <div className="form-grid form-grid-2">
-            <FormInput label="Product Name" required value={form.name ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, name: e.target.value }))} />
-            <FormInput label="Slug" required value={form.slug ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, slug: e.target.value }))} />
+            <FormInput label="Product Name" required value={form.name ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, name: e.target.value }))} />
+            <FormInput label="Slug" required value={form.slug ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, slug: e.target.value }))} />
           </div>
           <div style={{ marginTop: 16 }}>
-            <FormTextarea label="Description" value={form.description ?? ""} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm(f => ({ ...f, description: e.target.value }))} />
+            <FormTextarea label="Description" value={form.description ?? ""} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm((f) => ({ ...f, description: e.target.value }))} />
           </div>
         </div>
 
         <div className="form-section">
           <h3 className="form-section-title">Pricing & Stock</h3>
           <div className="form-grid form-grid-3">
-            <FormInput label="Price (₫)" required type="number" min="0" value={form.price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, price: e.target.value }))} />
-            <FormInput label="Sale Price (₫)" type="number" min="0" value={form.sale_price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, sale_price: e.target.value }))} />
-            <FormInput label="Stock" type="number" min="0" value={form.stock ?? 0} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, stock: e.target.value }))} />
+            <FormInput label="Price (?)" required type="number" min="0" value={form.price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, price: e.target.value }))} />
+            <FormInput label="Sale Price (?)" type="number" min="0" value={form.sale_price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, sale_price: e.target.value }))} />
+            <FormInput label="Stock" type="number" min="0" value={form.stock ?? 0} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, stock: e.target.value }))} />
           </div>
         </div>
 
         <div className="form-section">
           <h3 className="form-section-title">Categorization</h3>
           <div className="form-grid form-grid-2">
-            <FormSelect label="Category" required options={categories.map(c => ({ value: c.id, label: c.name }))} value={form.category_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, category_id: e.target.value }))} />
-            <FormSelect label="Brand" options={brands.map(b => ({ value: b.id, label: b.name }))} value={form.brand_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, brand_id: e.target.value }))} />
+            <FormSelect label="Category" required options={categories.map((c) => ({ value: c.id, label: c.name }))} value={form.category_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm((f) => ({ ...f, category_id: e.target.value }))} />
+            <FormSelect label="Brand" options={brands.map((b) => ({ value: b.id, label: b.name }))} value={form.brand_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm((f) => ({ ...f, brand_id: e.target.value }))} />
           </div>
         </div>
 
         <div className="form-section">
           <h3 className="form-section-title">Media</h3>
-          <FormInput label="Thumbnail URL" value={form.thumbnail_url ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, thumbnail_url: e.target.value }))} />
-          {form.thumbnail_url && (
-            <img src={form.thumbnail_url} alt="preview" className="thumb-preview" />
-          )}
+          <ImageUpload
+            label="Thumbnail"
+            uploadFolder="datn-ecomm/products"
+            value={form.thumbnail_url ?? ""}
+            onChange={(url) => setForm((f) => ({ ...f, thumbnail_url: url }))}
+          />
         </div>
 
         <div className="form-section">
           <h3 className="form-section-title">Visibility</h3>
           <div className="form-grid form-grid-2">
-            <FormToggle label="Active" checked={!!form.is_active} onChange={(v: boolean) => setForm(f => ({ ...f, is_active: v }))} />
-            <FormToggle label="Featured" checked={!!form.is_featured} onChange={(v: boolean) => setForm(f => ({ ...f, is_featured: v }))} />
+            <FormToggle label="Active" checked={!!form.is_active} onChange={(v: boolean) => setForm((f) => ({ ...f, is_active: v }))} />
+            <FormToggle label="Featured" checked={!!form.is_featured} onChange={(v: boolean) => setForm((f) => ({ ...f, is_featured: v }))} />
           </div>
         </div>
       </form>
@@ -152,7 +187,6 @@ export default function EditProductPage() {
         .form-grid-2 { grid-template-columns: 1fr 1fr; }
         .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
         @media (max-width: 640px) { .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; } }
-        .thumb-preview { margin-top: 16px; width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid #1f2937; }
       `}</style>
     </div>
   )

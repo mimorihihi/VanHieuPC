@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useState, useCallback, FormEvent } from "react"
 import { Plus, Pencil, Trash2, Search } from "lucide-react"
@@ -7,9 +7,33 @@ import { AdminBtn } from "@/components/ui/button"
 import { FormInput, FormSelect, FormToggle } from "@/components/ui/form-fields"
 import { ImageUpload } from "@/components/ui/image-upload"
 
-interface Category { id: string; name: string; slug: string; parent: { id: string; name: string } | null; is_active: boolean; sort_order: number }
+interface Category {
+  id: string
+  name: string
+  slug: string
+  parent: { id: string; name: string } | null
+  is_active: boolean
+  sort_order: number
+  image_url?: string | null
+}
 
-const EMPTY = { name: "", slug: "", parent_id: "", image_url: "", is_active: true, sort_order: 0 }
+interface CategoryFormState {
+  name: string
+  slug: string
+  parent_id: string
+  image_url: string
+  is_active: boolean
+  sort_order: number
+}
+
+const EMPTY: CategoryFormState = {
+  name: "",
+  slug: "",
+  parent_id: "",
+  image_url: "",
+  is_active: true,
+  sort_order: 0,
+}
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
@@ -17,18 +41,42 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState<"create" | "edit" | "delete" | null>(null)
   const [selected, setSelected] = useState<Category | null>(null)
-  const [form, setForm] = useState<typeof EMPTY & Record<string, any>>(EMPTY)
+  const [form, setForm] = useState<CategoryFormState>(EMPTY)
   const [saving, setSaving] = useState(false)
 
-  const fetch_ = useCallback(() => {
+  const fetchCategories = useCallback(() => {
     setLoading(true)
     fetch(`/api/admin/categories?search=${encodeURIComponent(search)}`)
-      .then(r => r.json())
-      .then(d => setCategories(d.categories ?? []))
+      .then((r) => r.json())
+      .then((d) => setCategories(d.categories ?? []))
       .finally(() => setLoading(false))
   }, [search])
 
-  useEffect(() => { fetch_() }, [fetch_])
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchCategories()
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [fetchCategories])
+
+  const openCreate = () => {
+    setForm(EMPTY)
+    setSelected(null)
+    setModal("create")
+  }
+
+  const openEdit = (c: Category) => {
+    setForm({
+      name: c.name ?? "",
+      slug: c.slug ?? "",
+      parent_id: c.parent?.id ?? "",
+      image_url: c.image_url ?? "",
+      is_active: !!c.is_active,
+      sort_order: Number(c.sort_order ?? 0),
+    })
+    setSelected(c)
+    setModal("edit")
+  }
 
   const save = async (e: FormEvent) => {
     e.preventDefault()
@@ -41,8 +89,13 @@ export default function CategoriesPage() {
       body: JSON.stringify({ ...form, parent_id: form.parent_id || null, sort_order: Number(form.sort_order) }),
     })
     setSaving(false)
-    if (res.ok) { setModal(null); fetch_() }
-    else { const d = await res.json(); alert(d.error) }
+    if (res.ok) {
+      setModal(null)
+      fetchCategories()
+    } else {
+      const d = await res.json()
+      alert(d.error)
+    }
   }
 
   const del = async () => {
@@ -50,81 +103,99 @@ export default function CategoriesPage() {
     await fetch(`/api/admin/categories/${selected?.id}`, { method: "DELETE" })
     setSaving(false)
     setModal(null)
-    fetch_()
+    fetchCategories()
   }
 
   const parentOptions = categories
-    .filter(c => !selected || c?.id !== selected?.id)
-    .map(c => ({ value: c?.id ?? "", label: c?.name ?? "" }))
+    .filter((c) => !selected || c.id !== selected.id)
+    .map((c) => ({ value: c.id ?? "", label: c.name ?? "" }))
 
   return (
     <div>
-      <div className="page-header">
+      <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="page-title">Categories</h1>
-          <p className="page-sub">{categories.length} total categories</p>
+          <h1 className="text-[22px] font-bold text-slate-100">Categories</h1>
+          <p className="mt-0.5 text-xs text-zinc-500">{categories.length} total categories</p>
         </div>
-        <AdminBtn onClick={() => { setForm(EMPTY); setSelected(null); setModal("create") }}>
-          <Plus size={16} /> Add Category
+        <AdminBtn onClick={openCreate}>
+          <Plus className="mr-2 h-4 w-4" /> Add Category
         </AdminBtn>
       </div>
 
-      <div className="table-toolbar">
-        <div className="search-wrap">
-          <Search size={16} className="search-icon" />
-          <input className="search-input" placeholder="Search categories…" value={search} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)} />
+      <div className="mb-4 max-w-sm">
+        <div className="relative">
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+          <input
+            className="h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 py-2 pr-3 pl-9 text-sm text-slate-200 outline-none transition-colors placeholder:text-zinc-500 focus:border-indigo-500"
+            placeholder="Search categories..."
+            value={search}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+          />
         </div>
       </div>
 
-      <div className="admin-table-wrap">
-        <table className="admin-table">
+      <div className="overflow-x-auto rounded-xl border border-zinc-800">
+        <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Slug</th>
-              <th>Parent</th>
-              <th>Order</th>
-              <th>Status</th>
-              <th>Actions</th>
+              {["Name", "Slug", "Parent", "Order", "Status", "Actions"].map((head) => (
+                <th key={head} className="border-b border-zinc-800 bg-zinc-950 px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 uppercase">
+                  {head}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {loading ? <tr><td colSpan={6} className="table-empty">Loading…</td></tr>
-              : categories.length === 0 ? <tr><td colSpan={6} className="table-empty">No categories found</td></tr>
-              : categories.map((c, i) => (
-                <tr key={c?.id || i}>
-                  <td className="cell-bold">{c?.name}</td>
-                  <td className="cell-mono">{c?.slug}</td>
-                  <td>{c?.parent ? <span className="badge badge-gray">{c.parent.name}</span> : <span style={{ color: "#6b7280" }}>—</span>}</td>
-                  <td>{c?.sort_order}</td>
-                  <td><span className={`badge ${c?.is_active ? "badge-green" : "badge-red"}`}>{c?.is_active ? "Active" : "Inactive"}</span></td>
-                  <td>
-                    <div className="action-btns">
-                      <button className="action-btn edit" onClick={() => { setForm({ ...c, parent_id: c?.parent?.id ?? "" } as any); setSelected(c); setModal("edit") }}><Pencil size={14} /></button>
-                      <button className="action-btn delete" onClick={() => { setSelected(c); setModal("delete") }}><Trash2 size={14} /></button>
+            {loading ? (
+              <tr><td colSpan={6} className="px-4 py-10 text-center text-zinc-500">Loading...</td></tr>
+            ) : categories.length === 0 ? (
+              <tr><td colSpan={6} className="px-4 py-10 text-center text-zinc-500">No categories found</td></tr>
+            ) : (
+              categories.map((c, i) => (
+                <tr key={c.id || i} className="border-b border-zinc-800 last:border-b-0 hover:bg-white/[0.02]">
+                  <td className="px-4 py-3 font-semibold text-slate-100">{c.name}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-zinc-400">{c.slug}</td>
+                  <td className="px-4 py-3">
+                    {c.parent ? <span className="inline-flex rounded-md bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">{c.parent.name}</span> : <span className="text-zinc-500">-</span>}
+                  </td>
+                  <td className="px-4 py-3 text-slate-200">{c.sort_order}</td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${c.is_active ? "bg-emerald-400/15 text-emerald-300" : "bg-red-400/15 text-red-300"}`}>
+                      {c.is_active ? "Active" : "Inactive"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1.5">
+                      <button className="rounded-md p-1.5 text-indigo-400 transition-colors hover:bg-indigo-500/15" onClick={() => openEdit(c)}>
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button className="rounded-md p-1.5 text-red-400 transition-colors hover:bg-red-500/15" onClick={() => { setSelected(c); setModal("delete") }}>
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
-              ))}
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
       <Modal open={modal === "create" || modal === "edit"} onClose={() => setModal(null)} title={modal === "edit" ? "Edit Category" : "New Category"}>
         <form onSubmit={save}>
-          <div className="form-grid form-grid-2">
-            <FormInput label="Name" required value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, name: e.target.value }))} />
-            <FormInput label="Slug" required value={form.slug} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, slug: e.target.value }))} />
-            <FormSelect label="Parent Category" options={parentOptions} value={form.parent_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, parent_id: e.target.value }))} />
-            <FormInput label="Sort Order" type="number" value={form.sort_order} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, sort_order: e.target.value }))} />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormInput label="Name" required value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, name: e.target.value }))} />
+            <FormInput label="Slug" required value={form.slug} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, slug: e.target.value }))} />
+            <FormSelect label="Parent Category" options={parentOptions} value={form.parent_id} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm((f) => ({ ...f, parent_id: e.target.value }))} />
+            <FormInput label="Sort Order" type="number" value={form.sort_order} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, sort_order: Number(e.target.value) }))} />
           </div>
-          <div style={{ marginTop: 16, marginBottom: 16 }}>
-            <ImageUpload label="Category Image" value={form.image_url} onChange={(url) => setForm(f => ({ ...f, image_url: url }))} />
+          <div className="my-4">
+            <ImageUpload label="Category Image" uploadFolder="datn-ecomm/categories" value={form.image_url} onChange={(url) => setForm((f) => ({ ...f, image_url: url }))} />
           </div>
-          <div style={{ marginBottom: 24 }}>
-            <FormToggle label="Active" checked={!!form.is_active} onChange={(v: boolean) => setForm(f => ({ ...f, is_active: v }))} />
+          <div className="mb-6">
+            <FormToggle label="Active" checked={!!form.is_active} onChange={(v: boolean) => setForm((f) => ({ ...f, is_active: v }))} />
           </div>
-          <div className="form-actions">
+          <div className="flex justify-end gap-3">
             <AdminBtn type="button" variant="secondary" onClick={() => setModal(null)}>Cancel</AdminBtn>
             <AdminBtn type="submit" loading={saving}>Save</AdminBtn>
           </div>
@@ -132,48 +203,14 @@ export default function CategoriesPage() {
       </Modal>
 
       <Modal open={modal === "delete"} onClose={() => setModal(null)} title="Delete Category" size="sm">
-        <p style={{ color: "#9ca3af", marginBottom: 24 }}>
-          Delete <strong style={{ color: "#f1f5f9" }}>{selected?.name}</strong>? Child categories will be detached.
+        <p className="mb-6 text-sm text-zinc-400">
+          Delete <strong className="text-slate-100">{selected?.name}</strong>? Child categories will be detached.
         </p>
-        <div className="form-actions">
+        <div className="flex justify-end gap-3">
           <AdminBtn variant="secondary" onClick={() => setModal(null)}>Cancel</AdminBtn>
           <AdminBtn variant="danger" loading={saving} onClick={del}>Delete</AdminBtn>
         </div>
       </Modal>
-
-      <style>{`
-        .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 16px; }
-        .page-title { font-size: 22px; font-weight: 700; color: #f1f5f9; }
-        .page-sub { font-size: 13px; color: #6b7280; margin-top: 2px; }
-        .table-toolbar { display: flex; margin-bottom: 16px; }
-        .search-wrap { position: relative; max-width: 360px; width: 100%; }
-        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #6b7280; }
-        .search-input { width: 100%; background: #111827; border: 1px solid #1f2937; color: #e2e8f0; border-radius: 8px; padding: 9px 12px 9px 36px; font-size: 14px; }
-        .search-input:focus { outline: none; border-color: #6366f1; }
-        .admin-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #1f2937; }
-        .admin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .admin-table th { background: #0f1117; color: #6b7280; font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 16px; text-align: left; border-bottom: 1px solid #1f2937; }
-        .admin-table td { padding: 14px 16px; border-bottom: 1px solid #1f2937; color: #e2e8f0; vertical-align: middle; }
-        .admin-table tr:last-child td { border-bottom: none; }
-        .admin-table tr:hover td { background: rgba(255,255,255,0.02); }
-        .table-empty { text-align: center; color: #6b7280; padding: 40px 0 !important; }
-        .cell-bold { font-weight: 600; color: #f1f5f9; }
-        .cell-mono { font-family: monospace; font-size: 13px; color: #9ca3af; }
-        .badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 500; }
-        .badge-green { background: rgba(16,185,129,0.15); color: #34d399; }
-        .badge-red { background: rgba(239,68,68,0.15); color: #f87171; }
-        .badge-gray { background: #1f2937; color: #9ca3af; }
-        .action-btns { display: flex; gap: 6px; }
-        .action-btn { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 6px; display: flex; transition: background 0.15s, color 0.15s; }
-        .action-btn.edit { color: #6366f1; }
-        .action-btn.edit:hover { background: rgba(99,102,241,0.15); }
-        .action-btn.delete { color: #ef4444; }
-        .action-btn.delete:hover { background: rgba(239,68,68,0.15); }
-        .form-grid { display: grid; gap: 16px; }
-        .form-grid-2 { grid-template-columns: 1fr 1fr; }
-        @media (max-width: 640px) { .form-grid-2 { grid-template-columns: 1fr; } }
-        .form-actions { display: flex; gap: 12px; justify-content: flex-end; }
-      `}</style>
     </div>
   )
 }

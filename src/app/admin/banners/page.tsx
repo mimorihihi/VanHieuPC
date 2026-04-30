@@ -112,7 +112,7 @@ export default function BannersPage() {
         <form onSubmit={save}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 24 }}>
             <FormInput label="Title" required value={form.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, title: e.target.value }))} />
-            <ImageUpload label="Banner Image" required value={form.image_url} onChange={(url) => setForm(f => ({ ...f, image_url: url }))} />
+            <ImageUpload label="Banner Image" required uploadFolder="datn-ecomm/banners" value={form.image_url} onChange={(url) => setForm(f => ({ ...f, image_url: url }))} />
             <FormInput label="Link URL" value={form.link_url} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, link_url: e.target.value }))} placeholder="https://... (optional)" />
             <FormInput label="Sort Order" type="number" value={form.sort_order} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, sort_order: Number(e.target.value) }))} />
             <FormToggle label="Active" checked={!!form.is_active} onChange={(v: boolean) => setForm(f => ({ ...f, is_active: v }))} />

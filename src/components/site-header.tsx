@@ -1,7 +1,9 @@
 "use client"
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useTranslations } from "next-intl"
+import { Check, Settings } from "lucide-react"
 import { BrandLogo } from './brand-logos'
 
 type AuthUser = {
@@ -12,6 +14,15 @@ type AuthUser = {
 
 export function SiteHeader() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
+  const [isLocaleMenuOpen, setIsLocaleMenuOpen] = useState(false)
+  const [locale, setLocale] = useState<"en" | "vi">(() => {
+    if (typeof document === "undefined") return "vi"
+    const localeMatch = document.cookie.match(/(?:^|; )locale=([^;]+)/)
+    const cookieLocale = localeMatch?.[1]
+    return cookieLocale === "en" || cookieLocale === "vi" ? cookieLocale : "vi"
+  })
+  const t = useTranslations("Header")
+  const localeMenuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const loadAuthUser = () => {
@@ -37,23 +48,44 @@ export function SiteHeader() {
     return () => window.removeEventListener("storage", loadAuthUser)
   }, [])
 
+  useEffect(() => {
+    if (!isLocaleMenuOpen) return
+
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!localeMenuRef.current) return
+      if (!localeMenuRef.current.contains(event.target as Node)) {
+        setIsLocaleMenuOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick)
+    return () => document.removeEventListener("mousedown", handleOutsideClick)
+  }, [isLocaleMenuOpen])
+
+  const switchLocale = (nextLocale: "en" | "vi") => {
+    document.cookie = `locale=${nextLocale}; path=/; max-age=31536000`
+    setLocale(nextLocale)
+    setIsLocaleMenuOpen(false)
+    window.location.reload()
+  }
+
   return (
     <header className="w-full bg-white sticky top-0 z-50">
       {/* Top utility bar */}
       <div className="border-b border-zinc-100 bg-zinc-50">
         <div className="container mx-auto px-4 flex items-center justify-between py-1.5 text-[11px] text-zinc-500">
           <div className="flex items-center gap-4">
-            <span>Mon-Thu: <span className="text-zinc-800 font-medium">9:00 AM - 5:30 PM</span></span>
+            <span>{t("hoursLabel")} <span className="text-zinc-800 font-medium">{t("hoursValue")}</span></span>
             <span className="hidden sm:inline text-zinc-400">|</span>
             <span className="hidden sm:inline">
-              Visit our showroom in 1234 Street Adress City Address, 1234{" "}
+              {t("showroomText")}{" "}
               <Link href="/contact" className="font-semibold text-zinc-700 hover:text-blue-600">
-                Contact Us
+                {t("contactUs")}
               </Link>
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <span>Call Us: (00) 1234 5678</span>
+            <span>{t("callUs")} (00) 1234 5678</span>
             <div className="flex gap-2 ml-2">
               <a href="#" className="hover:text-blue-600 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
@@ -77,12 +109,12 @@ export function SiteHeader() {
           {/* Navigation */}
           <nav className="hidden lg:flex items-center gap-1">
             {[
-              'Laptops',
-              'Desktop PCs',
-              'Networking',
-              'Printers & Scanners',
-              'PC Parts',
-              'All Other Products',
+              t("nav.laptops"),
+              t("nav.desktops"),
+              t("nav.networking"),
+              t("nav.printers"),
+              t("nav.parts"),
+              t("nav.other"),
             ].map((item) => (
               <a
                 key={item}
@@ -96,29 +128,56 @@ export function SiteHeader() {
               href="#"
               className="text-[13px] font-bold text-blue-600 border border-blue-600 hover:bg-blue-600 hover:text-white px-4 py-1.5 rounded transition-colors ml-2"
             >
-              Our Deals
+              {t("nav.deals")}
             </a>
           </nav>
 
           {/* Icons */}
           <div className="flex items-center gap-3">
             {/* Search */}
-            <button className="p-2 hover:bg-zinc-100 rounded-full transition-colors" aria-label="Search">
+            <button className="p-2 hover:bg-zinc-100 rounded-full transition-colors" aria-label={t("search")}>
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </button>
             {/* Cart */}
-            <Link href="/cart" className="p-2 hover:bg-zinc-100 rounded-full transition-colors relative" aria-label="Cart">
+            <Link href="/cart" className="p-2 hover:bg-zinc-100 rounded-full transition-colors relative" aria-label={t("cart")}>
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
               <span className="absolute -top-0.5 -right-0.5 bg-blue-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">2</span>
             </Link>
             {/* User */}
-            <Link href={authUser ? "/dashboard" : "/login"} className="hidden sm:block p-1" aria-label="User account">
+            <Link href={authUser ? "/dashboard" : "/login"} className="hidden sm:block p-1" aria-label={t("account")}>
               <div className="w-7 h-7 rounded-full bg-zinc-200 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               </div>
             </Link>
+            <div className="relative" ref={localeMenuRef}>
+              <button
+                onClick={() => setIsLocaleMenuOpen((prev) => !prev)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-zinc-100"
+                aria-label={t("settings")}
+              >
+                <Settings className="h-5 w-5 text-zinc-700" />
+              </button>
+              {isLocaleMenuOpen ? (
+                <div className="absolute right-0 mt-2 w-32 rounded-lg border border-zinc-200 bg-white p-1 shadow-lg">
+                  <button
+                    onClick={() => switchLocale("vi")}
+                    className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100"
+                  >
+                    <span>VI</span>
+                    {locale === "vi" ? <Check className="h-4 w-4 text-blue-600" /> : null}
+                  </button>
+                  <button
+                    onClick={() => switchLocale("en")}
+                    className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100"
+                  >
+                    <span>EN</span>
+                    {locale === "en" ? <Check className="h-4 w-4 text-blue-600" /> : null}
+                  </button>
+                </div>
+              ) : null}
+            </div>
             {/* Mobile menu */}
-            <button className="lg:hidden p-2" aria-label="Menu">
+            <button className="lg:hidden p-2" aria-label={t("menu")}>
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
           </div>

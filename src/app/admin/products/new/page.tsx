@@ -6,6 +6,7 @@ import Link from "next/link"
 import { ArrowLeft, Save } from "lucide-react"
 import { AdminBtn } from "@/components/ui/button"
 import { FormInput, FormTextarea, FormSelect, FormToggle } from "@/components/ui/form-fields"
+import { ImageUpload } from "@/components/ui/image-upload"
 
 interface Category { id: string; name: string }
 interface Brand { id: string; name: string }
@@ -126,10 +127,12 @@ export default function NewProductPage() {
 
         <div className="form-section">
           <h3 className="form-section-title">Media</h3>
-          <FormInput label="Thumbnail URL" value={form.thumbnail_url} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, thumbnail_url: e.target.value }))} placeholder="https://..." />
-          {form.thumbnail_url && (
-            <img src={form.thumbnail_url} alt="preview" className="thumb-preview" />
-          )}
+          <ImageUpload
+            label="Thumbnail"
+            uploadFolder="datn-ecomm/products"
+            value={form.thumbnail_url}
+            onChange={(url) => setForm((f) => ({ ...f, thumbnail_url: url }))}
+          />
         </div>
 
         <div className="form-section">
@@ -152,7 +155,6 @@ export default function NewProductPage() {
         .form-grid-2 { grid-template-columns: 1fr 1fr; }
         .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
         @media (max-width: 640px) { .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; } }
-        .thumb-preview { margin-top: 16px; width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid #1f2937; }
       `}</style>
     </div>
   )

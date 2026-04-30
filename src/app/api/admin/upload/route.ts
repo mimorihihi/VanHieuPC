@@ -1,16 +1,66 @@
 import { NextRequest, NextResponse } from "next/server"
-import { writeFile, mkdir } from "fs/promises"
-import path from "path"
-import crypto from "crypto"
+import { UploadApiResponse } from "cloudinary"
+import { cloudinary } from "@/lib/cloudinary"
+
+export const runtime = "nodejs"
 
 // Max file size: 5MB
 const MAX_SIZE = 5 * 1024 * 1024
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) return error.message
+  return "Upload failed"
+}
+
+function normalizeFolder(rawFolder: string | null) {
+  if (!rawFolder) return "datn-ecomm/images"
+  return rawFolder
+    .trim()
+    .replace(/[^a-zA-Z0-9/_-]/g, "")
+    .replace(/^\/+|\/+$/g, "") || "datn-ecomm/images"
+}
+
+function uploadBufferToCloudinary(fileBuffer: Buffer, folder: string) {
+  return new Promise<UploadApiResponse>((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        resource_type: "image",
+        overwrite: false,
+      },
+      (error, result) => {
+        if (error || !result) {
+          reject(error ?? new Error("Cloudinary upload failed"))
+          return
+        }
+        resolve(result)
+      }
+    )
+
+    stream.end(fileBuffer)
+  })
+}
+
 export async function POST(req: NextRequest) {
   try {
+    if (
+      !process.env.CLOUDINARY_CLOUD_NAME ||
+      !process.env.CLOUDINARY_API_KEY ||
+      !process.env.CLOUDINARY_API_SECRET
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET in .env",
+        },
+        { status: 500 }
+      )
+    }
+
     const formData = await req.formData()
     const file = formData.get("file") as File | null
+    const folder = normalizeFolder(formData.get("folder")?.toString() ?? null)
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
@@ -30,28 +80,22 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Generate unique filename
-    const ext = path.extname(file.name) || ".jpg"
-    const hash = crypto.randomBytes(8).toString("hex")
-    const timestamp = Date.now()
-    const filename = `${timestamp}-${hash}${ext}`
-
-    // Ensure upload directory exists
-    const uploadDir = path.join(process.cwd(), "public", "uploads")
-    await mkdir(uploadDir, { recursive: true })
-
-    // Write file
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    const filePath = path.join(uploadDir, filename)
-    await writeFile(filePath, buffer)
+    const uploaded = await uploadBufferToCloudinary(buffer, folder)
 
-    // Return the public URL
-    const url = `/uploads/${filename}`
-
-    return NextResponse.json({ url, filename, size: file.size, type: file.type })
-  } catch (error: any) {
-    console.error("Upload error:", error)
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 })
+    return NextResponse.json({
+      url: uploaded.secure_url,
+      public_id: uploaded.public_id,
+      width: uploaded.width,
+      height: uploaded.height,
+      bytes: uploaded.bytes,
+      format: uploaded.format,
+      folder,
+    })
+  } catch (error: unknown) {
+    const message = getErrorMessage(error)
+    console.error("Upload error:", message)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

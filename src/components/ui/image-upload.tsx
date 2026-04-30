@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react"
 
 interface ImageUploadProps {
@@ -8,8 +8,14 @@ interface ImageUploadProps {
   required?: boolean
   value: string
   onChange: (url: string) => void
+  uploadFolder?: string
   /** Optional placeholder text */
   placeholder?: string
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) return error.message
+  return "Upload failed"
 }
 
 export function ImageUpload({
@@ -17,9 +23,11 @@ export function ImageUpload({
   required = false,
   value,
   onChange,
+  uploadFolder = "datn-ecomm/images",
   placeholder = "Drag & drop or click to upload",
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -31,23 +39,31 @@ export function ImageUpload({
       try {
         const fd = new FormData()
         fd.append("file", file)
+        fd.append("folder", uploadFolder)
+
         const res = await fetch("/api/admin/upload", { method: "POST", body: fd })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || "Upload failed")
+
         onChange(data.url)
-      } catch (err: any) {
-        setError(err.message)
+        setPendingFile(null)
+      } catch (err: unknown) {
+        setError(getErrorMessage(err))
       } finally {
         setUploading(false)
       }
     },
-    [onChange],
+    [onChange, uploadFolder],
   )
+
+  const queueFile = (file: File) => {
+    setError(null)
+    setPendingFile(file)
+  }
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) upload(file)
-    // Reset input so same file can be re-selected
+    if (file) queueFile(file)
     if (fileRef.current) fileRef.current.value = ""
   }
 
@@ -55,13 +71,25 @@ export function ImageUpload({
     e.preventDefault()
     setDragOver(false)
     const file = e.dataTransfer.files?.[0]
-    if (file) upload(file)
+    if (file) queueFile(file)
   }
 
   const clear = () => {
     onChange("")
     setError(null)
+    setPendingFile(null)
   }
+
+  const pendingPreviewUrl = useMemo(() => {
+    if (!pendingFile) return null
+    return URL.createObjectURL(pendingFile)
+  }, [pendingFile])
+
+  useEffect(() => {
+    return () => {
+      if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl)
+    }
+  }, [pendingPreviewUrl])
 
   return (
     <>
@@ -73,9 +101,9 @@ export function ImageUpload({
           </label>
         )}
 
-        {value ? (
+        {value || pendingPreviewUrl ? (
           <div className="img-upload-preview">
-            <img src={value} alt="Preview" className="img-upload-img" />
+            <img src={pendingPreviewUrl ?? value} alt="Preview" className="img-upload-img" />
             <div className="img-upload-overlay">
               <button
                 type="button"
@@ -93,7 +121,9 @@ export function ImageUpload({
                 Change
               </button>
             </div>
-            <div className="img-upload-url">{value}</div>
+            <div className="img-upload-url">
+              {pendingFile ? `Preview: ${pendingFile.name}` : value}
+            </div>
           </div>
         ) : (
           <div
@@ -109,7 +139,7 @@ export function ImageUpload({
             {uploading ? (
               <div className="img-upload-loading">
                 <Loader2 size={28} className="spin" />
-                <span>Uploading…</span>
+                <span>Uploading...</span>
               </div>
             ) : (
               <div className="img-upload-empty">
@@ -117,20 +147,43 @@ export function ImageUpload({
                   <Upload size={24} />
                 </div>
                 <span className="img-upload-text">{placeholder}</span>
-                <span className="img-upload-hint">JPG, PNG, GIF, WebP, SVG — max 5MB</span>
+                <span className="img-upload-hint">JPG, PNG, GIF, WebP, SVG - max 5MB</span>
               </div>
             )}
           </div>
         )}
 
+        {pendingFile ? (
+          <div className="img-upload-pending">
+            <div className="img-upload-pending-name">{pendingFile.name}</div>
+            <div className="img-upload-pending-actions">
+              <button
+                type="button"
+                className="img-upload-pending-confirm"
+                onClick={() => upload(pendingFile)}
+                disabled={uploading}
+              >
+                Confirm upload
+              </button>
+              <button
+                type="button"
+                className="img-upload-pending-cancel"
+                onClick={() => setPendingFile(null)}
+                disabled={uploading}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         {error && <div className="img-upload-error">{error}</div>}
 
-        {/* Also allow manual URL input */}
         <div className="img-upload-url-input-wrap">
           <ImageIcon size={14} className="img-upload-url-icon" />
           <input
             className="img-upload-url-input"
-            placeholder="Or paste image URL…"
+            placeholder="Or paste image URL..."
             value={value}
             onChange={(e) => onChange(e.target.value)}
           />
@@ -281,6 +334,58 @@ export function ImageUpload({
           text-overflow: ellipsis;
           background: #0a0d14;
           border-top: 1px solid #1f2937;
+        }
+
+        .img-upload-pending {
+          border: 1px solid #374151;
+          border-radius: 10px;
+          padding: 10px 12px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          background: #0f1117;
+        }
+        .img-upload-pending-name {
+          font-size: 12px;
+          color: #cbd5e1;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .img-upload-pending-actions {
+          display: flex;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+        .img-upload-pending-confirm,
+        .img-upload-pending-cancel {
+          border: 1px solid #374151;
+          border-radius: 8px;
+          padding: 6px 10px;
+          font-size: 12px;
+          cursor: pointer;
+          transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+        .img-upload-pending-confirm {
+          background: #2563eb;
+          border-color: #2563eb;
+          color: #fff;
+        }
+        .img-upload-pending-confirm:hover:not(:disabled) {
+          background: #1d4ed8;
+        }
+        .img-upload-pending-cancel {
+          background: transparent;
+          color: #cbd5e1;
+        }
+        .img-upload-pending-cancel:hover:not(:disabled) {
+          background: #1f2937;
+        }
+        .img-upload-pending-confirm:disabled,
+        .img-upload-pending-cancel:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
 
         .img-upload-url-input-wrap {

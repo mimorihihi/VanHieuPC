@@ -1,0 +1,112 @@
+{
+  "Header": {
+    "hoursLabel": "Thu 2-Thu 5:",
+    "hoursValue": "9:00 - 17:30",
+    "showroomText": "Ghe showroom tai 1234 Street Address, City Address, 1234",
+    "contactUs": "Lien he",
+    "callUs": "Goi ngay:",
+    "nav": {
+      "laptops": "Laptop",
+      "desktops": "PC de ban",
+      "networking": "Thiet bi mang",
+      "printers": "May in & Scan",
+      "parts": "Linh kien PC",
+      "other": "San pham khac",
+      "deals": "Uu dai"
+    },
+    "search": "Tim kiem",
+    "cart": "Gio hang",
+    "account": "Tai khoan",
+    "menu": "Menu",
+    "settings": "Cai dat"
+  },
+  "Cart": {
+    "breadcrumbHome": "Trang chu",
+    "title": "Gio hang",
+    "columns": {
+      "item": "San pham",
+      "price": "Gia",
+      "qty": "SL",
+      "subtotal": "Tam tinh"
+    },
+    "loading": "Dang tai gio hang...",
+    "empty": "Gio hang cua ban dang trong.",
+    "signInSync": "Dang nhap",
+    "syncHint": "de dong bo gio hang giua cac thiet bi.",
+    "outOfStock": "Het hang",
+    "continue": "Tiep tuc mua sam",
+    "clear": "Xoa toan bo gio hang",
+    "update": "Cap nhat gio hang",
+    "updating": "Dang cap nhat...",
+    "summary": "Tong quan",
+    "estimate": "Uoc tinh van chuyen va thue",
+    "estimateHint": "Nhap dia chi nhan hang de uoc tinh phi ship.",
+    "discount": "Ap dung ma giam gia",
+    "shipping": "Van chuyen",
+    "vat": "VAT (10%)",
+    "orderTotal": "Tong don",
+    "checkout": "Thanh toan"
+  },
+  "Support": {
+    "productSupportTitle": "Ho tro san pham",
+    "productSupportDesc": "Bao hanh tai noi toi da 3 nam cho su an tam cua ban.",
+    "personalAccountTitle": "Tai khoan ca nhan",
+    "personalAccountDesc": "Nhieu uu dai lon, giao hang mien phi va doi ngu ho tro rieng.",
+    "savingsTitle": "Tiet kiem toi da",
+    "savingsDesc": "Giam den 70% cho san pham chon loc, kem mien phi van chuyen."
+  },
+  "Footer": {
+    "newsletter": {
+      "title": "Dang ky nhan ban tin.",
+      "subtitle": "Nhan uu dai moi nhat som nhat.",
+      "placeholder": "Email cua ban",
+      "subscribe": "Dang ky"
+    },
+    "titles": {
+      "information": "Thong tin",
+      "parts": "Linh kien PC",
+      "desktop": "PC de ban",
+      "laptops": "Laptop",
+      "address": "Dia chi"
+    },
+    "information": {
+      "aboutUs": "Ve chung toi",
+      "privacy": "Chinh sach bao mat",
+      "search": "Tim kiem",
+      "terms": "Dieu khoan",
+      "ordersReturns": "Don hang va doi tra",
+      "contactUs": "Lien he",
+      "advancedSearch": "Tim kiem nang cao",
+      "newsletter": "Dang ky ban tin"
+    },
+    "parts": {
+      "cpus": "CPU",
+      "addonCards": "Card mo rong",
+      "hdd": "O cung HDD",
+      "graphicCards": "Card do hoa",
+      "keyboardMouse": "Ban phim / Chuot",
+      "ram": "RAM (Bo nho)",
+      "software": "Phan mem",
+      "motherboards": "Mainboard"
+    },
+    "desktop": {
+      "custom": "PC tuy chinh",
+      "servers": "May chu",
+      "msi": "MSI All-In-One",
+      "hp": "HP/Compaq",
+      "asus": "ASUS"
+    },
+    "laptops": {
+      "everyday": "Laptop pho thong",
+      "msi": "Laptop MSI",
+      "hp": "Laptop HP",
+      "asus": "Laptop ASUS",
+      "workstation": "Laptop Workstation"
+    },
+    "address": {
+      "street": "Dia chi: 1234 Street Address City Address, 1234",
+      "phone": "Dien thoai"
+    },
+    "copyright": "© 2026 DATNECOMM. All Rights Reserved."
+  }
+}

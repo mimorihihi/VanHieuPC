@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
-import { CircleX, PencilLine } from "lucide-react"
+import { CircleX, Minus, Plus } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { SiteHeader } from "@/components/site-header"
 import { SupportFeature } from "@/components/home/support-features"
 import { SiteFooter } from "@/components/site-footer"
@@ -40,11 +41,17 @@ type CartItem = {
   in_stock: boolean
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) return error.message
+  return fallback
+}
+
 function formatMoney(value: number) {
-  return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  return `₫${value.toLocaleString("vi-VN")}`
 }
 
 export default function CartPage() {
+  const t = useTranslations("Cart")
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [items, setItems] = useState<CartItem[]>([])
   const [guestItems, setGuestItems] = useState<GuestCartItem[]>([])
@@ -100,9 +107,9 @@ export default function CartPage() {
             }, {})
           )
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (mounted) {
-          setError(e.message ?? "Failed to load cart")
+          setError(getErrorMessage(e, "Failed to load cart"))
         }
       } finally {
         if (mounted) {
@@ -133,14 +140,21 @@ export default function CartPage() {
     }, 0)
   }, [authUser, guestItems, items, qtyDraft])
 
-  const shipping = subtotal > 0 ? 21 : 0
-  const tax = subtotal * 0.000146
-  const gst = subtotal * 0.000146
-  const orderTotal = subtotal + shipping + tax + gst
+  const shipping = subtotal > 0 ? 30000 : 0
+  const vat = subtotal * 0.1
+  const orderTotal = subtotal + shipping + vat
 
   const handleQtyChange = (id: string, value: number) => {
     const safeValue = Number.isFinite(value) ? Math.max(1, Math.floor(value)) : 1
     setQtyDraft((prev) => ({ ...prev, [id]: safeValue }))
+  }
+
+  const increaseQty = (id: string, currentQty: number) => {
+    handleQtyChange(id, currentQty + 1)
+  }
+
+  const decreaseQty = (id: string, currentQty: number) => {
+    handleQtyChange(id, Math.max(1, currentQty - 1))
   }
 
   const updateCart = async () => {
@@ -184,8 +198,8 @@ export default function CartPage() {
           return acc
         }, {})
       )
-    } catch (e: any) {
-      setError(e.message ?? "Failed to update cart")
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, "Failed to update cart"))
     } finally {
       setIsUpdating(false)
     }
@@ -222,8 +236,8 @@ export default function CartPage() {
         delete next[itemId]
         return next
       })
-    } catch (e: any) {
-      setError(e.message ?? "Failed to remove item")
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, "Failed to remove item"))
     }
   }
 
@@ -253,8 +267,8 @@ export default function CartPage() {
       )
       setItems([])
       setQtyDraft({})
-    } catch (e: any) {
-      setError(e.message ?? "Failed to clear cart")
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, "Failed to clear cart"))
     } finally {
       setIsUpdating(false)
     }
@@ -268,34 +282,34 @@ export default function CartPage() {
         <section className="container mx-auto px-4 py-10">
           <div className="mb-4 flex items-center gap-2 text-[11px] text-zinc-500">
             <Link href="/" className="hover:text-blue-600">
-              Home
+              {t("breadcrumbHome")}
             </Link>
             <span>&bull;</span>
-            <span className="text-zinc-700">Shopping Cart</span>
+            <span className="text-zinc-700">{t("title")}</span>
           </div>
 
-          <h1 className="mb-6 text-4xl font-semibold tracking-tight text-zinc-900">Shopping Cart</h1>
+          <h1 className="mb-6 text-4xl font-semibold tracking-tight text-zinc-900">{t("title")}</h1>
 
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
               <section>
                 <div className="grid grid-cols-[1.6fr_0.5fr_0.4fr_0.6fr] border-b border-zinc-300 pb-3 text-xs font-semibold text-zinc-700">
-                  <span>Item</span>
-                  <span>Price</span>
-                  <span>Qty</span>
-                  <span>Subtotal</span>
+                  <span>{t("columns.item")}</span>
+                  <span>{t("columns.price")}</span>
+                  <span>{t("columns.qty")}</span>
+                  <span>{t("columns.subtotal")}</span>
                 </div>
 
                 {loading ? (
-                  <div className="py-8 text-sm text-zinc-500">Loading cart...</div>
+                  <div className="py-8 text-sm text-zinc-500">{t("loading")}</div>
                 ) : authUser && items.length === 0 ? (
-                  <div className="py-8 text-sm text-zinc-500">Your cart is empty.</div>
+                  <div className="py-8 text-sm text-zinc-500">{t("empty")}</div>
                 ) : !authUser && guestItems.length === 0 ? (
                   <div className="py-8 text-sm text-zinc-500">
-                    Your cart is empty.{" "}
+                    {t("empty")}{" "}
                     <Link href="/login" className="font-semibold text-blue-600 hover:underline">
-                      Sign in
+                      {t("signInSync")}
                     </Link>{" "}
-                    to sync cart across devices.
+                    {t("syncHint")}
                   </div>
                 ) : (
                   (authUser ? items : guestItems).map((item) => {
@@ -318,7 +332,7 @@ export default function CartPage() {
                           <div>
                             <p className="text-xs font-semibold text-zinc-900">{item.product_name}</p>
                             {"in_stock" in item && item.in_stock === false ? (
-                              <p className="mt-1 text-[11px] text-red-500">Out of stock</p>
+                              <p className="mt-1 text-[11px] text-red-500">{t("outOfStock")}</p>
                             ) : null}
                           </div>
                         </div>
@@ -326,13 +340,31 @@ export default function CartPage() {
                         <div className="pt-1 text-sm font-semibold text-zinc-900">{formatMoney(unitPrice)}</div>
 
                         <div className="pt-0.5">
-                          <input
-                            type="number"
-                            min={1}
-                            value={qty}
-                            onChange={(event) => handleQtyChange(rowId, Number(event.target.value))}
-                            className="h-9 w-14 rounded border border-zinc-300 bg-white px-2 text-center text-sm text-zinc-900 outline-none focus:border-blue-600"
-                          />
+                          <div className="inline-flex h-9 items-center rounded border border-zinc-300 bg-white">
+                            <button
+                              type="button"
+                              onClick={() => decreaseQty(rowId, qty)}
+                              className="inline-flex h-9 w-8 items-center justify-center text-zinc-600 transition-colors hover:bg-zinc-100"
+                              aria-label="Decrease quantity"
+                            >
+                              <Minus className="h-4 w-4" />
+                            </button>
+                            <input
+                              type="number"
+                              min={1}
+                              value={qty}
+                              onChange={(event) => handleQtyChange(rowId, Number(event.target.value))}
+                              className="h-9 w-12 border-x border-zinc-300 bg-white px-1 text-center text-sm text-zinc-900 outline-none focus:border-blue-600"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => increaseQty(rowId, qty)}
+                              className="inline-flex h-9 w-8 items-center justify-center text-zinc-600 transition-colors hover:bg-zinc-100"
+                              aria-label="Increase quantity"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
 
                         <div className="flex items-start justify-between gap-2">
@@ -344,12 +376,6 @@ export default function CartPage() {
                               aria-label="Remove item"
                             >
                               <CircleX className="h-4 w-4" />
-                            </button>
-                            <button
-                              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-zinc-300 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
-                              aria-label="Edit item"
-                            >
-                              <PencilLine className="h-3 w-3" />
                             </button>
                           </div>
                         </div>
@@ -363,21 +389,21 @@ export default function CartPage() {
                     href="/products"
                     className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-300 px-6 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100"
                   >
-                    Continue Shopping
+                    {t("continue")}
                   </Link>
                   <button
                     onClick={clearCart}
                     disabled={isUpdating || (authUser ? items.length === 0 : guestItems.length === 0)}
                     className="inline-flex h-10 items-center justify-center rounded-full bg-black px-6 text-xs font-semibold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Clear Shopping Cart
+                    {t("clear")}
                   </button>
                   <button
                     onClick={updateCart}
                     disabled={isUpdating || (authUser ? items.length === 0 : guestItems.length === 0)}
                     className="inline-flex h-10 items-center justify-center rounded-full bg-black px-6 text-xs font-semibold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 lg:ml-auto"
                   >
-                    {isUpdating ? "Updating..." : "Update Shopping Cart"}
+                    {isUpdating ? t("updating") : t("update")}
                   </button>
                 </div>
 
@@ -385,19 +411,19 @@ export default function CartPage() {
               </section>
 
               <aside className="h-fit rounded bg-zinc-100 p-4">
-                <h2 className="text-2xl font-semibold text-zinc-900">Summary</h2>
+                <h2 className="text-2xl font-semibold text-zinc-900">{t("summary")}</h2>
 
                 <div className="mt-4 space-y-3 border-b border-zinc-300 pb-4">
                   <div className="flex items-center justify-between text-sm text-zinc-800">
-                    <span>Estimate Shipping and Tax</span>
+                    <span>{t("estimate")}</span>
                     <span>+</span>
                   </div>
-                  <p className="text-xs text-zinc-500">Enter your destination to get a shipping estimate.</p>
+                  <p className="text-xs text-zinc-500">{t("estimateHint")}</p>
                 </div>
 
                 <div className="mt-4 space-y-3 border-b border-zinc-300 pb-4">
                   <div className="flex items-center justify-between text-sm text-zinc-800">
-                    <span>Apply Discount Code</span>
+                    <span>{t("discount")}</span>
                     <span>+</span>
                   </div>
                 </div>
@@ -408,26 +434,22 @@ export default function CartPage() {
                     <span className="font-semibold">{formatMoney(subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Shipping</span>
+                    <span>{t("shipping")}</span>
                     <span className="font-semibold">{formatMoney(shipping)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Tax</span>
-                    <span className="font-semibold">{formatMoney(tax)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>GST (10%)</span>
-                    <span className="font-semibold">{formatMoney(gst)}</span>
+                    <span>{t("vat")}</span>
+                    <span className="font-semibold">{formatMoney(vat)}</span>
                   </div>
                 </div>
 
                 <div className="mt-4 border-t border-zinc-300 pt-4">
                   <div className="mb-3 flex items-center justify-between text-sm font-semibold text-zinc-900">
-                    <span>Order Total</span>
+                    <span>{t("orderTotal")}</span>
                     <span>{formatMoney(orderTotal)}</span>
                   </div>
                   <button className="inline-flex h-11 w-full items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white transition-colors hover:bg-blue-700">
-                    Proceed to Checkout
+                    {t("checkout")}
                   </button>
                 </div>
               </aside>

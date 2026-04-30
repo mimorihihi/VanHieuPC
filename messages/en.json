@@ -1,0 +1,112 @@
+{
+  "Header": {
+    "hoursLabel": "Mon-Thu:",
+    "hoursValue": "9:00 AM - 5:30 PM",
+    "showroomText": "Visit our showroom at 1234 Street Address, City Address, 1234",
+    "contactUs": "Contact Us",
+    "callUs": "Call Us:",
+    "nav": {
+      "laptops": "Laptops",
+      "desktops": "Desktop PCs",
+      "networking": "Networking",
+      "printers": "Printers & Scanners",
+      "parts": "PC Parts",
+      "other": "All Other Products",
+      "deals": "Our Deals"
+    },
+    "search": "Search",
+    "cart": "Cart",
+    "account": "User account",
+    "menu": "Menu",
+    "settings": "Settings"
+  },
+  "Cart": {
+    "breadcrumbHome": "Home",
+    "title": "Shopping Cart",
+    "columns": {
+      "item": "Item",
+      "price": "Price",
+      "qty": "Qty",
+      "subtotal": "Subtotal"
+    },
+    "loading": "Loading cart...",
+    "empty": "Your cart is empty.",
+    "signInSync": "Sign in",
+    "syncHint": "to sync cart across devices.",
+    "outOfStock": "Out of stock",
+    "continue": "Continue Shopping",
+    "clear": "Clear Shopping Cart",
+    "update": "Update Shopping Cart",
+    "updating": "Updating...",
+    "summary": "Summary",
+    "estimate": "Estimate Shipping and Tax",
+    "estimateHint": "Enter your destination to get a shipping estimate.",
+    "discount": "Apply Discount Code",
+    "shipping": "Shipping",
+    "vat": "VAT (10%)",
+    "orderTotal": "Order Total",
+    "checkout": "Proceed to Checkout"
+  },
+  "Support": {
+    "productSupportTitle": "Product Support",
+    "productSupportDesc": "Up to 3 years on-site warranty available for your peace of mind.",
+    "personalAccountTitle": "Personal Account",
+    "personalAccountDesc": "With big discounts, free delivery and a dedicated support team.",
+    "savingsTitle": "Amazing Savings",
+    "savingsDesc": "Up to 70% off on selected items, plus free shipping on all orders."
+  },
+  "Footer": {
+    "newsletter": {
+      "title": "Sign Up To Our Newsletter.",
+      "subtitle": "Be the first to hear about the latest offers.",
+      "placeholder": "Your Email",
+      "subscribe": "Subscribe"
+    },
+    "titles": {
+      "information": "Information",
+      "parts": "PC Parts",
+      "desktop": "Desktop PCs",
+      "laptops": "Laptops",
+      "address": "Address"
+    },
+    "information": {
+      "aboutUs": "About Us",
+      "privacy": "Privacy Policy",
+      "search": "Search",
+      "terms": "Terms",
+      "ordersReturns": "Orders and Returns",
+      "contactUs": "Contact Us",
+      "advancedSearch": "Advanced Search",
+      "newsletter": "Newsletter Subscription"
+    },
+    "parts": {
+      "cpus": "CPUs",
+      "addonCards": "Add On Cards",
+      "hdd": "Hard Drives (HDD)",
+      "graphicCards": "Graphic Cards",
+      "keyboardMouse": "Keyboards / Mice",
+      "ram": "RAM (Memory)",
+      "software": "Software",
+      "motherboards": "Motherboards"
+    },
+    "desktop": {
+      "custom": "Custom PCs",
+      "servers": "Servers",
+      "msi": "MSI All-In-One PCs",
+      "hp": "HP/Compaq PCs",
+      "asus": "ASUS PCs"
+    },
+    "laptops": {
+      "everyday": "Everyday Use Laptops",
+      "msi": "MSI Laptops",
+      "hp": "HP Laptops",
+      "asus": "ASUS Laptops",
+      "workstation": "Workstation Laptops"
+    },
+    "address": {
+      "street": "Address: 1234 Street Address City Address, 1234",
+      "phone": "Phone"
+    },
+    "copyright": "© 2026 DATNECOMM. All Rights Reserved."
+  }
+}
