@@ -23,7 +23,7 @@ async function getBanners() {
 async function getProductsByCategory(categorySlug: string, limit = 10) {
   try {
     const [products] = await query(
-      `SELECT p.id, p.name, p.price, p.sale_price, p.stock, p.thumbnail_url, p.avg_rating, c.name as category_name
+      `SELECT p.id, p.slug, p.name, p.price, p.sale_price, p.stock, p.thumbnail_url, p.avg_rating, c.name as category_name
        FROM products p
        LEFT JOIN categories c ON p.category_id = c.id
        WHERE p.is_active = true AND c.slug = ?
@@ -40,7 +40,7 @@ async function getProductsByCategory(categorySlug: string, limit = 10) {
 async function getAllProducts(limit = 10) {
   try {
     const [products] = await query(
-      `SELECT id, name, price, sale_price, stock, thumbnail_url, avg_rating
+      `SELECT id, slug, name, price, sale_price, stock, thumbnail_url, avg_rating
        FROM products
        WHERE is_active = true
        ORDER BY created_at DESC
@@ -57,22 +57,24 @@ export default async function Home() {
   const [
     banners,
     newProducts,
+    customBuildProducts,
     laptopProducts,
-    monitorProducts,
-    desktopProducts,
-    accessoryProducts,
+    graphicCardProducts,
+    monitorProducts
   ] = await Promise.all([
     getBanners(),
     getAllProducts(10),
+    getProductsByCategory("custome-build", 8),
     getProductsByCategory("laptops", 8),
-    getProductsByCategory("monitors", 8),
-    getProductsByCategory("motherboards", 8),
-    getProductsByCategory("mice-keyboards", 8),
+    getProductsByCategory("graphic-cards", 8),
+    getProductsByCategory("monitors", 8)
   ])
 
   // Chuyển Decimal → string để tránh lỗi serialization
-  const serialize = (products: any[]) =>
-    products.map((p: any) => ({
+  const serialize = (
+    products: Array<Record<string, unknown> & { price?: { toString?: () => string } | null; sale_price?: { toString?: () => string } | null; avg_rating?: { toString?: () => string } | null }>
+  ) =>
+    products.map((p) => ({
       ...p,
       price: p.price?.toString() ?? "0",
       sale_price: p.sale_price?.toString() ?? null,
@@ -105,10 +107,10 @@ export default async function Home() {
         {/* 2. New Products → Promo → Custom Builds → Laptops → Desktops → Monitors */}
         <HomeClient
           newProducts={serialize(newProducts)}
+          customBuildProducts={serialize(customBuildProducts)}
           laptopProducts={serialize(laptopProducts)}
+          graphicCardProducts={serialize(graphicCardProducts)}
           monitorProducts={serialize(monitorProducts)}
-          desktopProducts={serialize(desktopProducts)}
-          accessoryProducts={serialize(accessoryProducts)}
         />
 
         {/* 3. Brand Logos */}
