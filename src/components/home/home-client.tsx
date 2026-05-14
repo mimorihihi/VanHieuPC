@@ -17,27 +17,37 @@ interface Product {
 }
 
 interface HomeClientProps {
+  categoryImages: {
+    customBuild: string | null
+    laptops: string | null
+    desktops: string | null
+    monitors: string | null
+  }
+  desktopCategorySlug: string
   newProducts: Product[]
   customBuildProducts: Product[]
   laptopProducts: Product[]
-  graphicCardProducts: Product[]
+  desktopProducts: Product[]
   monitorProducts: Product[]
 }
 
 export function HomeClient({
+  categoryImages,
+  desktopCategorySlug,
   newProducts,
   customBuildProducts,
   laptopProducts,
-  graphicCardProducts,
+  desktopProducts,
   monitorProducts,
 }: HomeClientProps) {
+  const fallbackSectionImage = "/images/hero-banner.jpg"
   const laptopTabs = [
     "MSI GS Series",
     "MSI GT Series",
     "MSI GL Series",
     "MSI GE Series",
   ]
-  const gpuTabs = [
+  const desktopTabs = [
     "MSI Infinite Series",
     "MSI Trident",
     "MSI GL Series",
@@ -45,7 +55,7 @@ export function HomeClient({
   ]
 
   const [activeLaptopTab, setActiveLaptopTab] = useState(laptopTabs[0])
-  const [activeGpuTab, setActiveGpuTab] = useState(gpuTabs[0])
+  const [activeDesktopTab, setActiveDesktopTab] = useState(desktopTabs[0])
 
   const mapProduct = (p: Product) => ({
     id: p.id,
@@ -64,16 +74,12 @@ export function HomeClient({
       "MSI GT Series": (name: string) => name.includes("XPS") || name.includes("Inspiron"),
       "MSI GL Series": (name: string) => name.includes("Vivobook"),
       "MSI GE Series": (name: string) => name.includes("Modern") || name.includes("AORUS"),
-      "MSI Infinite Series": (name: string) => name.includes("RTX 4060") || name.includes("RTX 4070 SUPER"),
-      "MSI Trident": (name: string) => name.includes("RTX 4080 SUPER"),
-      "MSI GL Series GPU": (name: string) => name.includes("RX 7800 XT"),
-      "MSI Nightblade": (name: string) => name.includes("RTX") || name.includes("Radeon"),
+      "MSI Infinite Series": (name: string) => name.includes("Infinite"),
+      "MSI Trident": (name: string) => name.includes("Trident"),
+      "MSI Nightblade": (name: string) => name.includes("Nightblade"),
     } as const
 
-    const matcherKey = tab === "MSI GL Series" && products === graphicCardProducts
-      ? "MSI GL Series GPU"
-      : tab
-    const matcher = matchers[matcherKey as keyof typeof matchers]
+    const matcher = matchers[tab as keyof typeof matchers]
     if (!matcher) return products
 
     const filtered = products.filter((product) => matcher(product.name))
@@ -81,7 +87,7 @@ export function HomeClient({
   }
 
   const visibleLaptopProducts = filterProductsByTab(laptopProducts, activeLaptopTab)
-  const visibleGpuProducts = filterProductsByTab(graphicCardProducts, activeGpuTab)
+  const visibleDesktopProducts = filterProductsByTab(desktopProducts, activeDesktopTab)
 
   return (
     <>
@@ -101,9 +107,10 @@ export function HomeClient({
       {/* 3. Custom Builds section — featured card + grid, no header */}
       <CategorySection
         products={customBuildProducts.map(mapProduct)}
+        maxItems={5}
         featuredCard={{
           title: "Custom\nBuilds",
-          image: "/images/hero-banner.jpg",
+          image: categoryImages.customBuild ?? customBuildProducts[0]?.thumbnail_url ?? fallbackSectionImage,
           href: "/products?category=custome-build",
           buttonText: "Explore Builds",
         }}
@@ -116,25 +123,27 @@ export function HomeClient({
         activeTab={activeLaptopTab}
         onTabChange={setActiveLaptopTab}
         products={visibleLaptopProducts.map(mapProduct)}
+        maxItems={5}
         featuredCard={{
           title: "MSI\nLaptops",
-          image: "/images/hero-banner.jpg",
+          image: categoryImages.laptops ?? visibleLaptopProducts[0]?.thumbnail_url ?? fallbackSectionImage,
           href: "/products?category=laptops",
           buttonText: "Shop Laptops",
         }}
         className="bg-white"
       />
 
-      {/* 5. Graphic Cards section */}
+      {/* 5. Desktops section */}
       <CategorySection
-        tabs={gpuTabs}
-        activeTab={activeGpuTab}
-        onTabChange={setActiveGpuTab}
-        products={visibleGpuProducts.map(mapProduct)}
+        tabs={desktopTabs}
+        activeTab={activeDesktopTab}
+        onTabChange={setActiveDesktopTab}
+        products={visibleDesktopProducts.map(mapProduct)}
+        maxItems={5}
         featuredCard={{
           title: "Desktops",
-          image: "/images/hero-banner.jpg",
-          href: "/products?category=graphic-cards",
+          image: categoryImages.desktops ?? visibleDesktopProducts[0]?.thumbnail_url ?? fallbackSectionImage,
+          href: `/products?category=${desktopCategorySlug}`,
           buttonText: "Shop Desktops",
         }}
         className="bg-zinc-50"
@@ -143,9 +152,10 @@ export function HomeClient({
       {/* 6. Gaming Monitors section — featured card + grid, no header */}
       <CategorySection
         products={monitorProducts.map(mapProduct)}
+        maxItems={5}
         featuredCard={{
           title: "Gaming\nMonitors",
-          image: "/images/hero-banner.jpg",
+          image: categoryImages.monitors ?? monitorProducts[0]?.thumbnail_url ?? fallbackSectionImage,
           href: "/products?category=monitors",
           buttonText: "Shop Monitors",
         }}

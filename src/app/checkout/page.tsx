@@ -16,6 +16,8 @@ type AuthUser = {
 
 type GuestCartItem = {
   product_id: string
+  variant_id?: string | null
+  variant_name?: string | null
   quantity: number
   product_name: string
   product_slug: string
@@ -28,6 +30,8 @@ type GuestCartItem = {
 type CartItem = {
   id: string
   product_id: string
+  variant_id?: string | null
+  variant_name?: string | null
   quantity: number
   product_name: string
   product_slug: string
@@ -78,7 +82,7 @@ function calculateDiscount(subtotal: number, coupon: AppliedCoupon | null) {
 }
 
 function checkoutItemKey(item: CartItem | GuestCartItem) {
-  return "id" in item ? item.id : item.product_id
+  return "id" in item ? item.id : `${item.product_id}:${item.variant_id ?? ""}`
 }
 
 export default function CheckoutPage() {
@@ -401,6 +405,9 @@ export default function CheckoutPage() {
                           >
                             {item.product_name}
                           </Link>
+                          {"variant_name" in item && item.variant_name ? (
+                            <p className="mt-1 text-[11px] text-zinc-500">{item.variant_name}</p>
+                          ) : null}
                           <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-zinc-500">
                             <span>QTY: {item.quantity}</span>
                             <span className="font-semibold text-zinc-900">

@@ -8,6 +8,19 @@ import { BrandLogosStrip } from "@/components/home/brand-logos-strip"
 import { HomeClient } from "@/components/home/home-client"
 import { query } from "@/lib/db"
 
+type HomeCategoryRow = {
+  slug: string
+  name: string
+  image_url: string | null
+}
+
+type HomeBrandRow = {
+  id: string
+  name: string
+  slug: string
+  logo_url: string | null
+}
+
 async function getBanners() {
   try {
     const [banners] = await query(
@@ -37,6 +50,17 @@ async function getProductsByCategory(categorySlug: string, limit = 10) {
   }
 }
 
+async function getProductsByCategorySlugs(categorySlugs: string[], limit = 10) {
+  for (const slug of categorySlugs) {
+    const products = await getProductsByCategory(slug, limit)
+    if (products.length > 0) {
+      return { slug, products }
+    }
+  }
+
+  return { slug: categorySlugs[0], products: [] }
+}
+
 async function getAllProducts(limit = 10) {
   try {
     const [products] = await query(
@@ -53,22 +77,67 @@ async function getAllProducts(limit = 10) {
   }
 }
 
+async function getHomeCategories() {
+  try {
+    const [rows] = await query<HomeCategoryRow[]>(
+      `SELECT slug, name, image_url
+       FROM categories
+       WHERE slug IN (?, ?, ?, ?, ?)` ,
+      ["custome-build", "laptops", "desktops", "desktop-pcs", "monitors"]
+    )
+
+    return rows.reduce<Record<string, HomeCategoryRow>>((acc, category) => {
+      acc[category.slug] = category
+      return acc
+    }, {})
+  } catch {
+    return {}
+  }
+}
+
+async function getHomeBrands() {
+  try {
+    const [rows] = await query<HomeBrandRow[]>(
+      `SELECT id, name, slug, logo_url
+       FROM brands
+       WHERE is_active = true
+       ORDER BY name ASC`
+    )
+
+    return rows
+  } catch {
+    return []
+  }
+}
+
 export default async function Home() {
+  const desktopCategorySlugs = ["desktops", "desktop-pcs"]
   const [
     banners,
+    brands,
+    homeCategories,
     newProducts,
     customBuildProducts,
     laptopProducts,
-    graphicCardProducts,
+    desktopCategoryResult,
     monitorProducts
   ] = await Promise.all([
     getBanners(),
+    getHomeBrands(),
+    getHomeCategories(),
     getAllProducts(10),
     getProductsByCategory("custome-build", 8),
     getProductsByCategory("laptops", 8),
-    getProductsByCategory("graphic-cards", 8),
+    getProductsByCategorySlugs(desktopCategorySlugs, 8),
     getProductsByCategory("monitors", 8)
   ])
+
+  const desktopProducts = desktopCategoryResult.products
+  const desktopCategoryImage =
+    homeCategories[desktopCategoryResult.slug]?.image_url
+    ?? homeCategories.desktops?.image_url
+    ?? homeCategories["desktop-pcs"]?.image_url
+    ?? null
 
   // Chuyển Decimal → string để tránh lỗi serialization
   const serialize = (
@@ -106,15 +175,22 @@ export default async function Home() {
 
         {/* 2. New Products → Promo → Custom Builds → Laptops → Desktops → Monitors */}
         <HomeClient
+          categoryImages={{
+            customBuild: homeCategories["custome-build"]?.image_url ?? null,
+            laptops: homeCategories["laptops"]?.image_url ?? null,
+            desktops: desktopCategoryImage,
+            monitors: homeCategories["monitors"]?.image_url ?? null,
+          }}
+          desktopCategorySlug={desktopCategoryResult.slug}
           newProducts={serialize(newProducts)}
           customBuildProducts={serialize(customBuildProducts)}
           laptopProducts={serialize(laptopProducts)}
-          graphicCardProducts={serialize(graphicCardProducts)}
+          desktopProducts={serialize(desktopProducts)}
           monitorProducts={serialize(monitorProducts)}
         />
 
         {/* 3. Brand Logos */}
-        <BrandLogosStrip />
+        <BrandLogosStrip brands={brands} />
 
         {/* 4. Instagram Feed */}
         <InstagramFeed />

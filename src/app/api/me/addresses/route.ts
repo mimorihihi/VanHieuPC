@@ -1,0 +1,95 @@
+import { execute, query } from "@/lib/db"
+import { NextRequest } from "next/server"
+import type { RowDataPacket } from "mysql2/promise"
+
+type AddressRow = RowDataPacket & {
+  id: string
+  user_id: string
+  full_name: string
+  phone: string
+  province: string
+  district: string
+  ward: string
+  address_line: string
+  is_default: number | boolean
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Failed"
+}
+
+function parseIsDefault(value: unknown) {
+  return value === true || value === "true" || value === 1 || value === "1"
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const userId = req.nextUrl.searchParams.get("user_id")?.trim() ?? ""
+    if (!userId) {
+      return Response.json({ error: "user_id is required" }, { status: 400 })
+    }
+
+    const [rows] = await query<AddressRow[]>(
+      `SELECT id, user_id, full_name, phone, province, district, ward, address_line, is_default
+       FROM addresses
+       WHERE user_id = ?
+       ORDER BY is_default DESC, id ASC`,
+      [userId]
+    )
+
+    const addresses = rows.map((address) => ({
+      ...address,
+      is_default: Boolean(address.is_default),
+    }))
+
+    return Response.json({ addresses })
+  } catch (error: unknown) {
+    return Response.json({ error: getErrorMessage(error) }, { status: 500 })
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const userId = body.user_id?.trim() ?? ""
+    const fullName = body.full_name?.trim() ?? ""
+    const phone = body.phone?.trim() ?? ""
+    const province = body.province?.trim() ?? ""
+    const district = body.district?.trim() ?? ""
+    const ward = body.ward?.trim() ?? ""
+    const addressLine = body.address_line?.trim() ?? ""
+    const isDefault = parseIsDefault(body.is_default)
+
+    if (!userId || !fullName || !phone || !province || !district || !ward || !addressLine) {
+      return Response.json({ error: "All address fields are required" }, { status: 400 })
+    }
+
+    if (isDefault) {
+      await execute("UPDATE addresses SET is_default = 0 WHERE user_id = ?", [userId])
+    }
+
+    const id = crypto.randomUUID()
+    await execute(
+      `INSERT INTO addresses
+       (id, user_id, full_name, phone, province, district, ward, address_line, is_default)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, userId, fullName, phone, province, district, ward, addressLine, isDefault]
+    )
+
+    const [rows] = await query<AddressRow[]>(
+      `SELECT id, user_id, full_name, phone, province, district, ward, address_line, is_default
+       FROM addresses
+       WHERE id = ?
+       LIMIT 1`,
+      [id]
+    )
+
+    const address = rows[0]
+    return Response.json(
+      { address: address ? { ...address, is_default: Boolean(address.is_default) } : null },
+      { status: 201 }
+    )
+  } catch (error: unknown) {
+    return Response.json({ error: getErrorMessage(error) }, { status: 500 })
+  }
+}

@@ -1,16 +1,18 @@
 "use client"
 
-import React, { useMemo, useState } from "react"
+import Link from "next/link"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ProductCard } from "@/components/product-card"
 import { cn } from "@/lib/utils"
 import { BarChart3, ChevronRight, Heart, Mail, ShoppingCart, Star } from "lucide-react"
 
-interface Product {
+export interface Product {
   id: string
   name: string
   slug: string
   description: string
+  short_description: string | null
   price: string
   sale_price: string | null
   stock: number
@@ -21,7 +23,14 @@ interface Product {
   category: { id: string; name: string; slug: string } | null
   brand: { id: string; name: string; slug: string } | null
   images: { id: string; url: string; sort_order: number }[]
-  variants: { id: string; name: string; attributes: Record<string, string> }[]
+  variants: {
+    id: string
+    name: string
+    price_override: string | null
+    stock: number
+    is_active: boolean
+    attributes: Record<string, string>
+  }[]
   related: {
     id: string
     name: string
@@ -44,6 +53,8 @@ type AuthUser = {
 
 type GuestCartItem = {
   product_id: string
+  variant_id?: string | null
+  variant_name?: string | null
   quantity: number
   product_name: string
   product_slug: string
@@ -65,6 +76,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
   const [qty, setQty] = useState(1)
   const [isAdding, setIsAdding] = useState(false)
   const [addMessage, setAddMessage] = useState("")
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
 
   const allImages =
     product.images.length > 0
@@ -73,24 +85,87 @@ export function ProductDetailClient({ product }: { product: Product }) {
         ? [product.thumbnail_url]
         : ["/images/placeholder.png"]
 
+  const availableVariants = useMemo(
+    () => product.variants.filter((variant) => variant.is_active),
+    [product.variants]
+  )
+
+  const variantOptionGroups = useMemo(() => {
+    return availableVariants.reduce<Record<string, string[]>>((acc, variant) => {
+      Object.entries(variant.attributes ?? {}).forEach(([key, value]) => {
+        if (!value) return
+        const current = acc[key] ?? []
+        if (!current.includes(value)) {
+          current.push(value)
+        }
+        acc[key] = current
+      })
+      return acc
+    }, {})
+  }, [availableVariants])
+
+  const optionKeys = useMemo(() => Object.keys(variantOptionGroups), [variantOptionGroups])
+
+  const selectedVariant = useMemo(() => {
+    if (availableVariants.length === 0) return null
+    if (optionKeys.length === 0) return availableVariants[0]
+
+    return (
+      availableVariants.find((variant) =>
+        optionKeys.every((key) => {
+          const selectedValue = selectedOptions[key]
+          if (!selectedValue) return false
+          return variant.attributes?.[key] === selectedValue
+        })
+      ) ?? null
+    )
+  }, [availableVariants, optionKeys, selectedOptions])
+
   const hasDiscount = product.sale_price && Number(product.sale_price) < Number(product.price)
-  const currentPrice = hasDiscount ? product.sale_price! : product.price
+  const baseCurrentPrice = hasDiscount ? Number(product.sale_price) : Number(product.price)
+  const currentPrice = Number(selectedVariant?.price_override ?? baseCurrentPrice)
+  const currentStock = Number(selectedVariant?.stock ?? product.stock ?? 0)
+  const variantSelectionRequired = availableVariants.length > 0 && optionKeys.length > 0
+  const isVariantSelectionComplete = !variantSelectionRequired || selectedVariant !== null
+
   const formatPrice = (value: string | number) =>
-    Number(value).toLocaleString("en-US", { minimumFractionDigits: 2 })
+    Number(value).toLocaleString("vi-VN")
+
+  const aboutProductContent = useMemo(() => {
+    const shortDescription = product.short_description?.trim()
+
+    if (!shortDescription || shortDescription === "0") {
+      return "About product information will be updated soon."
+    }
+
+    return shortDescription
+  }, [product.short_description])
 
   const detailList = useMemo(() => {
-    const fromDescription = (product.description || "")
+    return (product.description || "")
       .split("\n")
       .map((line) => line.replace(/^[-*]\s*/, "").trim())
       .filter(Boolean)
+  }, [product.description])
 
-    if (fromDescription.length > 0) return fromDescription
-    return Object.entries(product.specs).slice(0, 10).map(([key, value]) => `${key}: ${value}`)
-  }, [product.description, product.specs])
+  const displayProductName = selectedVariant ? `${product.name} - ${selectedVariant.name}` : product.name
+
+  const handleSelectOption = (key: string, value: string) => {
+    setSelectedOptions((prev) => ({
+      ...prev,
+      [key]: value,
+    }))
+    setAddMessage("")
+  }
 
   const handleAddToCart = () => {
     if (isAdding) return
     setAddMessage("")
+
+    if (!isVariantSelectionComplete) {
+      setAddMessage("Please choose a variant before adding to cart.")
+      return
+    }
 
     let user: unknown = null
     try {
@@ -104,8 +179,10 @@ export function ProductDetailClient({ product }: { product: Product }) {
       try {
         const rawGuest = window.localStorage.getItem("cart_guest_v1")
         const guestItems = rawGuest ? (JSON.parse(rawGuest) as GuestCartItem[]) : []
-        const existingIdx = guestItems.findIndex((item) => item.product_id === product.id)
-        const maxQty = Math.max(1, Number(product.stock ?? 1))
+        const existingIdx = guestItems.findIndex(
+          (item) => item.product_id === product.id && (item.variant_id ?? null) === (selectedVariant?.id ?? null)
+        )
+        const maxQty = Math.max(1, currentStock)
 
         if (existingIdx >= 0) {
           const nextQty = Math.max(1, Number(guestItems[existingIdx].quantity ?? 1)) + qty
@@ -113,12 +190,14 @@ export function ProductDetailClient({ product }: { product: Product }) {
         } else {
           guestItems.push({
             product_id: product.id,
+            variant_id: selectedVariant?.id ?? null,
+            variant_name: selectedVariant?.name ?? null,
             quantity: Math.min(qty, maxQty),
-            product_name: product.name,
+            product_name: displayProductName,
             product_slug: product.slug,
             thumbnail_url: product.thumbnail_url,
-            price: product.price,
-            sale_price: product.sale_price,
+            price: String(currentPrice),
+            sale_price: null,
           })
         }
 
@@ -140,6 +219,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
           body: JSON.stringify({
             user_id: userId,
             product_id: product.id,
+            variant_id: selectedVariant?.id ?? null,
             quantity: qty,
           }),
         })
@@ -187,7 +267,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
 
           <div className="flex items-center gap-3">
             <p className="text-xs text-zinc-600">
-              On Sale from <span className="font-semibold text-zinc-900">${formatPrice(currentPrice)}</span>
+              On Sale from <span className="font-semibold text-zinc-900">{formatPrice(currentPrice * qty)}đ</span>
             </p>
             <div className="flex h-10 items-center overflow-hidden rounded border border-zinc-200 bg-white">
               <button
@@ -198,22 +278,20 @@ export function ProductDetailClient({ product }: { product: Product }) {
               </button>
               <span className="w-8 text-center text-sm font-semibold text-zinc-900">{qty}</span>
               <button
-                onClick={() => setQty((prev) => prev + 1)}
-                className="h-full px-3 text-zinc-500 transition-colors hover:bg-zinc-100"
+                onClick={() => setQty((prev) => Math.min(currentStock, prev + 1))}
+                disabled={currentStock <= 0 || qty >= currentStock}
+                className="h-full px-3 text-zinc-500 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 +
               </button>
             </div>
             <button
               onClick={handleAddToCart}
-              disabled={isAdding || product.stock <= 0}
+              disabled={isAdding || currentStock <= 0 || !isVariantSelectionComplete}
               className="inline-flex h-10 items-center rounded-full bg-blue-600 px-6 text-xs font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <ShoppingCart className="mr-2 h-4 w-4" />
               {isAdding ? "Adding..." : "Add to Cart"}
-            </button>
-            <button className="inline-flex h-10 items-center rounded-full bg-amber-400 px-6 text-xs font-semibold text-zinc-900 transition-colors hover:bg-amber-300">
-              PayPal
             </button>
           </div>
           {addMessage ? <p className="w-full text-right text-xs text-zinc-600">{addMessage}</p> : null}
@@ -224,13 +302,13 @@ export function ProductDetailClient({ product }: { product: Product }) {
         <div className="container mx-auto grid grid-cols-1 px-4 lg:grid-cols-2">
           <div className="py-10 lg:pr-10">
             <div className="mb-5 flex items-center gap-1.5 text-[11px] text-zinc-500">
-              <a href="/" className="hover:text-blue-600">
+              <Link href="/" className="hover:text-blue-600">
                 Home
-              </a>
+              </Link>
               <span>•</span>
-              <a href="/products" className="hover:text-blue-600">
+              <Link href="/products" className="hover:text-blue-600">
                 Laptops
-              </a>
+              </Link>
               <span>•</span>
               <span>{product.brand?.name ?? "Series"}</span>
             </div>
@@ -251,21 +329,18 @@ export function ProductDetailClient({ product }: { product: Product }) {
               <span className="text-xs text-blue-600">Be the first to review this product</span>
             </div>
 
-            {activeTab === "About Product" && (
-              <p className="max-w-xl whitespace-pre-line text-sm leading-7 text-zinc-700">
-                {product.description ||
-                  "MSI MPG Trident series desktop designed for gaming and creative tasks with compact form factor, strong performance, and easy setup for daily workloads."}
-              </p>
-            )}
-
             {activeTab === "Details" && (
-              <ul className="max-w-xl list-disc space-y-1 pl-4 text-sm leading-6 text-zinc-700">
+              <ul className="max-w-xl list-disc space-y-1 pl-4 text-base leading-7 text-zinc-800">
                 {detailList.length > 0 ? (
                   detailList.map((item, idx) => <li key={`${item}-${idx}`}>{item}</li>)
                 ) : (
                   <li>Detailed product information will be updated soon.</li>
                 )}
               </ul>
+            )}
+
+            {activeTab === "About Product" && (
+              <p className="max-w-xl whitespace-pre-line text-sm leading-7 text-zinc-700">{aboutProductContent}</p>
             )}
 
             {activeTab === "Specs" && (
@@ -284,6 +359,47 @@ export function ProductDetailClient({ product }: { product: Product }) {
                 )}
               </div>
             )}
+
+            {availableVariants.length > 0 ? (
+              <div className="mt-6 max-w-xl space-y-4">
+                {optionKeys.map((key) => (
+                  <div key={key}>
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                      {key}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {variantOptionGroups[key].map((value) => {
+                        const active = selectedOptions[key] === value
+
+                        return (
+                          <button
+                            key={`${key}-${value}`}
+                            type="button"
+                            onClick={() => handleSelectOption(key, value)}
+                            className={cn(
+                              "rounded-full border px-4 py-2 text-xs font-semibold transition-colors",
+                              active
+                                ? "border-blue-600 bg-blue-600 text-white"
+                                : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50"
+                            )}
+                          >
+                            {value}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                {selectedVariant ? (
+                  <p className="text-xs text-zinc-500">
+                    Selected: <span className="font-semibold text-zinc-900">{selectedVariant.name}</span>
+                  </p>
+                ) : variantSelectionRequired ? (
+                  <p className="text-xs text-amber-600">Please choose all variant options.</p>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="mt-8 flex items-center justify-between text-xs">
               <p className="text-zinc-700">

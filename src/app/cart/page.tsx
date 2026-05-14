@@ -17,6 +17,8 @@ type AuthUser = {
 
 type GuestCartItem = {
   product_id: string
+  variant_id?: string | null
+  variant_name?: string | null
   quantity: number
   product_name: string
   product_slug: string
@@ -31,6 +33,7 @@ type CartItem = {
   user_id: string
   product_id: string
   variant_id: string | null
+  variant_name?: string | null
   quantity: number
   product_name: string
   product_slug: string
@@ -302,7 +305,7 @@ export default function CartPage() {
 
   const removeItem = async (itemId: string) => {
     if (!authUser) {
-      const nextGuest = guestItems.filter((item) => item.product_id !== itemId)
+      const nextGuest = guestItems.filter((item) => `${item.product_id}:${item.variant_id ?? ""}` !== itemId)
       setGuestItems(nextGuest)
       window.localStorage.setItem("cart_guest_v1", JSON.stringify(nextGuest))
       setQtyDraft((prev) => {
@@ -415,7 +418,9 @@ export default function CartPage() {
               ) : (
                 (authUser ? items : guestItems).map((item) => {
                   const unitPrice = Number(item.sale_price ?? item.price ?? 0)
-                  const rowId = authUser ? (item as CartItem).id : (item as GuestCartItem).product_id
+                  const rowId = authUser
+                    ? (item as CartItem).id
+                    : `${(item as GuestCartItem).product_id}:${(item as GuestCartItem).variant_id ?? ""}`
                   const productSlug = item.product_slug
                   const qty = Number(qtyDraft[rowId] ?? item.quantity ?? 1)
                   const rowSubtotal = unitPrice * qty
@@ -435,6 +440,9 @@ export default function CartPage() {
                           <Link href={`/products/${productSlug}`} className="text-xs font-semibold text-zinc-900 hover:text-blue-600">
                             {item.product_name}
                           </Link>
+                          {"variant_name" in item && item.variant_name ? (
+                            <p className="mt-1 text-[11px] text-zinc-500">{item.variant_name}</p>
+                          ) : null}
                           {"in_stock" in item && item.in_stock === false ? (
                             <p className="mt-1 text-[11px] text-red-500">{t("outOfStock")}</p>
                           ) : null}

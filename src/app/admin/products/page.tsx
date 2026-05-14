@@ -1,12 +1,10 @@
 "use client"
 
-import { useEffect, useState, useCallback, FormEvent } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Plus, Pencil, Trash2, Search, Star } from "lucide-react"
 import Link from "next/link"
 import { Modal } from "@/components/ui/modal"
 import { AdminBtn } from "@/components/ui/button"
-import { FormInput, FormTextarea, FormSelect, FormToggle } from "@/components/ui/form-fields"
-import { ImageUpload } from "@/components/ui/image-upload"
 
 interface Category {
   id: string
@@ -33,67 +31,19 @@ interface Product {
   brand: Brand | null
 }
 
-interface ProductFormState {
-  name: string
-  slug: string
-  description: string
-  price: string
-  sale_price: string
-  stock: number
-  thumbnail_url: string
-  category_id: string
-  brand_id: string
-  is_active: boolean
-  is_featured: boolean
-}
-
-const EMPTY: ProductFormState = {
-  name: "",
-  slug: "",
-  description: "",
-  price: "",
-  sale_price: "",
-  stock: 0,
-  thumbnail_url: "",
-  category_id: "",
-  brand_id: "",
-  is_active: true,
-  is_featured: false,
-}
-
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
-  const [modal, setModal] = useState<"create" | "edit" | "delete" | null>(null)
+  const [modal, setModal] = useState<"delete" | null>(null)
   const [selected, setSelected] = useState<Product | null>(null)
-  const [form, setForm] = useState<ProductFormState>(EMPTY)
   const [saving, setSaving] = useState(false)
-  const [categories, setCategories] = useState<Category[]>([])
-  const [brands, setBrands] = useState<Brand[]>([])
 
   const limit = 15
 
-  const normalizeOptions = (items: unknown[]): { id: string; name: string }[] =>
-    items
-      .filter((item): item is { id?: unknown; name?: unknown } => !!item && typeof item === "object")
-      .map((item) => ({
-        id: typeof item.id === "string" ? item.id : "",
-        name: typeof item.name === "string" ? item.name : "",
-      }))
-      .filter((item) => item.id.length > 0)
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/admin/categories").then((r) => r.json()),
-      fetch("/api/admin/brands").then((r) => r.json()),
-    ]).then(([catData, brandData]) => {
-      setCategories(normalizeOptions(catData.categories ?? []))
-      setBrands(normalizeOptions(brandData.brands ?? []))
-    })
-  }, [])
 
   const fetchProducts = useCallback(() => {
     setLoading(true)
@@ -113,54 +63,11 @@ export default function ProductsPage() {
     return () => clearTimeout(timer)
   }, [fetchProducts])
 
-  const openEdit = (p: Product) => {
-    setForm({
-      name: p.name ?? "",
-      slug: p.slug ?? "",
-      description: "",
-      price: p.price?.toString() ?? "",
-      sale_price: p.sale_price?.toString() ?? "",
-      stock: Number(p.stock ?? 0),
-      thumbnail_url: p.thumbnail_url ?? "",
-      category_id: p.category?.id ?? "",
-      brand_id: p.brand?.id ?? "",
-      is_active: !!p.is_active,
-      is_featured: !!p.is_featured,
-    })
-    setSelected(p)
-    setModal("edit")
-  }
-
   const openDelete = (p: Product) => {
     setSelected(p)
     setModal("delete")
   }
 
-  const saveProduct = async (e: FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    const url = modal === "edit" ? `/api/admin/products/${selected?.id}` : "/api/admin/products"
-    const method = modal === "edit" ? "PUT" : "POST"
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        price: Number(form.price),
-        sale_price: form.sale_price ? Number(form.sale_price) : null,
-        stock: Number(form.stock),
-        brand_id: form.brand_id || null,
-      }),
-    })
-    setSaving(false)
-    if (res.ok) {
-      setModal(null)
-      fetchProducts()
-    } else {
-      const d = await res.json()
-      alert(d.error)
-    }
-  }
 
   const deleteProduct = async () => {
     setSaving(true)
@@ -267,9 +174,9 @@ export default function ProductsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1.5">
-                      <button className="rounded-md p-1.5 text-indigo-400 transition-colors hover:bg-indigo-500/15" onClick={() => openEdit(p)}>
+                      <Link href={`/admin/products/${p.id}`} className="rounded-md p-1.5 text-indigo-400 transition-colors hover:bg-indigo-500/15">
                         <Pencil className="h-4 w-4" />
-                      </button>
+                      </Link>
                       <button className="rounded-md p-1.5 text-red-400 transition-colors hover:bg-red-500/15" onClick={() => openDelete(p)}>
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -293,37 +200,6 @@ export default function ProductsPage() {
           </AdminBtn>
         </div>
       )}
-
-      <Modal open={modal === "edit"} onClose={() => setModal(null)} title="Edit Product" size="lg">
-        <form onSubmit={saveProduct}>
-          <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FormInput label="Name" required value={form.name ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, name: e.target.value }))} />
-            <FormInput label="Slug" required value={form.slug ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, slug: e.target.value }))} />
-            <FormInput label="Price (₫)" required type="number" value={form.price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, price: e.target.value }))} />
-            <FormInput label="Sale Price (₫)" type="number" value={form.sale_price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, sale_price: e.target.value }))} />
-            <FormInput label="Stock" type="number" value={form.stock ?? 0} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, stock: Number(e.target.value) }))} />
-            <div className="md:col-span-2">
-              <ImageUpload label="Thumbnail" uploadFolder="datn-ecomm/products" value={form.thumbnail_url ?? ""} onChange={(url) => setForm((f) => ({ ...f, thumbnail_url: url }))} />
-            </div>
-            <FormSelect label="Category" required options={categories.map((c) => ({ value: c.id ?? "", label: c.name ?? "" }))} value={form.category_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm((f) => ({ ...f, category_id: e.target.value }))} />
-            <FormSelect label="Brand" options={brands.map((b) => ({ value: b.id ?? "", label: b.name ?? "" }))} value={form.brand_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm((f) => ({ ...f, brand_id: e.target.value }))} />
-          </div>
-
-          <div className="mb-4">
-            <FormTextarea label="Description" value={form.description ?? ""} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm((f) => ({ ...f, description: e.target.value }))} />
-          </div>
-
-          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FormToggle label="Active" checked={!!form.is_active} onChange={(v: boolean) => setForm((f) => ({ ...f, is_active: v }))} />
-            <FormToggle label="Featured" checked={!!form.is_featured} onChange={(v: boolean) => setForm((f) => ({ ...f, is_featured: v }))} />
-          </div>
-
-          <div className="flex justify-end gap-3">
-            <AdminBtn type="button" variant="secondary" onClick={() => setModal(null)}>Cancel</AdminBtn>
-            <AdminBtn type="submit" loading={saving}>Save Changes</AdminBtn>
-          </div>
-        </form>
-      </Modal>
 
       <Modal open={modal === "delete"} onClose={() => setModal(null)} title="Delete Product" size="sm">
         <p className="mb-6 text-sm text-zinc-400">

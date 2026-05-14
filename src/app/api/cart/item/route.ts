@@ -1,5 +1,6 @@
 import { execute, query } from "@/lib/db"
 import { NextRequest } from "next/server"
+import type { RowDataPacket } from "mysql2/promise"
 
 type UpdateCartItemBody = {
   user_id?: string
@@ -10,6 +11,22 @@ type UpdateCartItemBody = {
 type DeleteCartItemBody = {
   user_id?: string
   item_id?: string
+}
+
+type CartItemStockRow = RowDataPacket & {
+  id: string
+  cart_id: string
+  variant_id: string | null
+  stock: number
+  variant_stock: number | null
+}
+
+type CartItemDeleteRow = RowDataPacket & {
+  cart_id: string
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Failed"
 }
 
 function toPositiveInt(value: unknown, fallback = 1) {
@@ -29,21 +46,23 @@ export async function PATCH(req: NextRequest) {
       return Response.json({ error: "user_id and item_id are required" }, { status: 400 })
     }
 
-    const [itemRows] = await query(
-      `SELECT ci.id, ci.cart_id, p.stock
+    const [itemRows] = await query<CartItemStockRow[]>(
+      `SELECT ci.id, ci.cart_id, ci.variant_id, p.stock, pv.stock as variant_stock
        FROM cart_items ci
        INNER JOIN carts c ON c.id = ci.cart_id
        LEFT JOIN products p ON p.id = ci.product_id
+       LEFT JOIN product_variants pv ON pv.id = ci.variant_id
        WHERE ci.id = ? AND c.user_id = ?
        LIMIT 1`,
       [itemId, userId]
     )
-    const item = itemRows[0] as any
+    const item = itemRows[0]
     if (!item) {
       return Response.json({ error: "Cart item not found" }, { status: 404 })
     }
 
-    const boundedQty = Math.min(quantity, toPositiveInt(item.stock, quantity))
+    const stockLimit = item.variant_id ? toPositiveInt(item.variant_stock, quantity) : toPositiveInt(item.stock, quantity)
+    const boundedQty = Math.min(quantity, stockLimit)
 
     await execute(
       `UPDATE cart_items
@@ -54,8 +73,8 @@ export async function PATCH(req: NextRequest) {
     await execute(`UPDATE carts SET updated_at = NOW() WHERE id = ?`, [item.cart_id])
 
     return Response.json({ success: true, item_id: itemId, quantity: boundedQty })
-  } catch (error: any) {
-    return Response.json({ error: error.message ?? "Failed" }, { status: 500 })
+  } catch (error: unknown) {
+    return Response.json({ error: getErrorMessage(error) }, { status: 500 })
   }
 }
 
@@ -69,7 +88,7 @@ export async function DELETE(req: NextRequest) {
       return Response.json({ error: "user_id and item_id are required" }, { status: 400 })
     }
 
-    const [rows] = await query(
+    const [rows] = await query<CartItemDeleteRow[]>(
       `SELECT ci.cart_id
        FROM cart_items ci
        INNER JOIN carts c ON c.id = ci.cart_id
@@ -77,7 +96,7 @@ export async function DELETE(req: NextRequest) {
        LIMIT 1`,
       [itemId, userId]
     )
-    const target = rows[0] as any
+    const target = rows[0]
     if (!target) {
       return Response.json({ error: "Cart item not found" }, { status: 404 })
     }
@@ -86,7 +105,7 @@ export async function DELETE(req: NextRequest) {
     await execute(`UPDATE carts SET updated_at = NOW() WHERE id = ?`, [target.cart_id])
 
     return Response.json({ success: true })
-  } catch (error: any) {
-    return Response.json({ error: error.message ?? "Failed" }, { status: 500 })
+  } catch (error: unknown) {
+    return Response.json({ error: getErrorMessage(error) }, { status: 500 })
   }
 }

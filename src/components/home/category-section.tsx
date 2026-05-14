@@ -15,6 +15,7 @@ interface Product {
 interface CategorySectionProps {
   title?: string
   products: Product[]
+  maxItems?: number
   featuredCard?: {
     title: string
     image: string
@@ -33,6 +34,7 @@ interface CategorySectionProps {
 export function CategorySection({
   title,
   products,
+  maxItems,
   featuredCard,
   tabs,
   activeTab,
@@ -42,6 +44,8 @@ export function CategorySection({
   seeAllText = "See All Products",
   scrollable = false,
 }: CategorySectionProps) {
+  const visibleProducts = typeof maxItems === "number" ? products.slice(0, maxItems) : products
+
   return (
     <section className={`w-full py-8 lg:py-10 ${className || ""}`}>
       <div className="container mx-auto px-4">
@@ -109,7 +113,7 @@ export function CategorySection({
           {scrollable ? (
             <div className="flex-1 overflow-x-auto">
               <div className="flex min-w-max gap-4 pb-1">
-                {products.map((product) => (
+                {visibleProducts.map((product) => (
                   <div key={product.id} className="w-[188px] shrink-0">
                     {product.href ? (
                       <Link href={product.href} className="block h-full">
@@ -138,7 +142,7 @@ export function CategorySection({
             </div>
           ) : (
             <div className={`grid flex-1 grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 ${featuredCard ? "xl:grid-cols-5" : "xl:grid-cols-6"}`}>
-              {products.map((product) => (
+              {visibleProducts.map((product) => (
                 product.href ? (
                   <Link key={product.id} href={product.href} className="block h-full">
                     <ProductCard

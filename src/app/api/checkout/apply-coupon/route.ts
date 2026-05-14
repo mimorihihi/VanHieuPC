@@ -1,7 +1,8 @@
 import { query } from "@/lib/db"
 import { NextRequest } from "next/server"
+import type { RowDataPacket } from "mysql2/promise"
 
-type CouponRow = {
+type CouponRow = RowDataPacket & {
   id: string
   code: string
   type: "PERCENT" | "FIXED"

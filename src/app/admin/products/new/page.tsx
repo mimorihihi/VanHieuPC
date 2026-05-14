@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useState, FormEvent } from "react"
 import { useRouter } from "next/navigation"
@@ -10,18 +10,20 @@ import { ImageUpload } from "@/components/ui/image-upload"
 
 interface Category { id: string; name: string }
 interface Brand { id: string; name: string }
+interface SpecItem { key: string; value: string }
 
 export default function NewProductPage() {
   const router = useRouter()
   const [categories, setCategories] = useState<Category[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
   const [form, setForm] = useState({
-    name: "", slug: "", description: "", price: "",
+    name: "", slug: "", description: "", short_description: "", price: "",
     sale_price: "", stock: "0", thumbnail_url: "",
     category_id: "", brand_id: "", is_active: true, is_featured: false,
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
+  const [specItems, setSpecItems] = useState<SpecItem[]>([{ key: "", value: "" }])
 
   const normalizeOptions = (items: unknown[]): { id: string; name: string }[] =>
     items
@@ -53,15 +55,37 @@ export default function NewProductPage() {
     setForm(f => ({ ...f, name, slug }))
   }
 
+  const updateSpecItem = (index: number, field: keyof SpecItem, value: string) => {
+    setSpecItems((prev) => prev.map((item, idx) => (idx === index ? { ...item, [field]: value } : item)))
+  }
+
+  const addSpecItem = () => {
+    setSpecItems((prev) => [...prev, { key: "", value: "" }])
+  }
+
+  const removeSpecItem = (index: number) => {
+    setSpecItems((prev) => (prev.length === 1 ? [{ key: "", value: "" }] : prev.filter((_, idx) => idx !== index)))
+  }
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setError("")
+    const specs = specItems.reduce<Record<string, string>>((acc, item) => {
+      const specKey = item.key.trim()
+      const specValue = item.value.trim()
+
+      if (!specKey || !specValue) return acc
+      acc[specKey] = specValue
+      return acc
+    }, {})
+
     const res = await fetch("/api/admin/products", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        specs,
         price: Number(form.price),
         sale_price: form.sale_price ? Number(form.sale_price) : null,
         stock: Number(form.stock),
@@ -104,6 +128,9 @@ export default function NewProductPage() {
             <FormInput label="Slug" required value={form.slug} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, slug: e.target.value }))} />
           </div>
           <div style={{ marginTop: 16 }}>
+            <FormTextarea label="Short Description" value={form.short_description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm(f => ({ ...f, short_description: e.target.value }))} />
+          </div>
+          <div style={{ marginTop: 16 }}>
             <FormTextarea label="Description" value={form.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm(f => ({ ...f, description: e.target.value }))} />
           </div>
         </div>
@@ -136,6 +163,38 @@ export default function NewProductPage() {
         </div>
 
         <div className="form-section">
+          <h3 className="form-section-title">Specifications</h3>
+          <div className="space-y-3">
+            {specItems.map((item, index) => (
+              <div key={`spec-${index}`} className="form-grid form-grid-specs">
+                <FormInput
+                  label={index === 0 ? "Label" : "Label"}
+                  value={item.key}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSpecItem(index, "key", e.target.value)}
+                  placeholder="CPU"
+                />
+                <FormInput
+                  label={index === 0 ? "Value" : "Value"}
+                  value={item.value}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSpecItem(index, "value", e.target.value)}
+                  placeholder="Intel Core i7"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeSpecItem(index)}
+                  className="spec-remove-btn"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button type="button" onClick={addSpecItem} className="spec-add-btn">
+              + Add Specification
+            </button>
+          </div>
+        </div>
+
+        <div className="form-section">
           <h3 className="form-section-title">Visibility</h3>
           <div className="form-grid form-grid-2">
             <FormToggle label="Active (visible on store)" checked={form.is_active} onChange={(v: boolean) => setForm(f => ({ ...f, is_active: v }))} />
@@ -154,7 +213,10 @@ export default function NewProductPage() {
         .form-grid { display: grid; gap: 16px; }
         .form-grid-2 { grid-template-columns: 1fr 1fr; }
         .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
-        @media (max-width: 640px) { .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; } }
+        .form-grid-specs { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; align-items: end; }
+        .spec-add-btn { width: fit-content; border: 1px solid #374151; background: #0f172a; color: #e5e7eb; border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; }
+        .spec-remove-btn { border: 1px solid rgba(248,113,113,0.3); background: rgba(127,29,29,0.35); color: #fca5a5; border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; height: 42px; }
+        @media (max-width: 640px) { .form-grid-2, .form-grid-3, .form-grid-specs { grid-template-columns: 1fr; } .spec-remove-btn { height: auto; } }
       `}</style>
     </div>
   )
