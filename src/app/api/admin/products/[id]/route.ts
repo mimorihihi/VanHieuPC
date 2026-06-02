@@ -1,6 +1,12 @@
 import { execute, query } from "@/lib/db"
 import { NextRequest } from "next/server"
 
+type ProductImageInput = {
+  id?: string
+  url?: string
+  sort_order?: number
+}
+
 function serializeProduct(p: any) {
   return {
     ...p,
@@ -38,7 +44,7 @@ export async function GET(
       : null
     product.specs = typeof product.specs === "string" ? JSON.parse(product.specs) : product.specs
     const [images] = await query(
-      "SELECT id, product_id, url, sort_order FROM product_images WHERE product_id = ? ORDER BY sort_order ASC",
+      "SELECT id, product_id, variant_id, url, sort_order FROM product_images WHERE product_id = ? ORDER BY sort_order ASC",
       [id]
     )
     const [variants] = await query(
@@ -63,17 +69,33 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await req.json()
-    const { name, slug, description, price, sale_price, stock, thumbnail_url, category_id, brand_id, is_active, is_featured, specs } = body
+    const {
+      name,
+      slug,
+      description,
+      short_description,
+      price,
+      sale_price,
+      stock,
+      thumbnail_url,
+      category_id,
+      brand_id,
+      is_active,
+      is_featured,
+      specs,
+      general_images,
+    } = body
 
     await execute(
       `UPDATE products
-       SET name = ?, slug = ?, description = ?, price = ?, sale_price = ?, stock = ?,
+       SET name = ?, slug = ?, description = ?, short_description = ?, price = ?, sale_price = ?, stock = ?,
            thumbnail_url = ?, category_id = ?, brand_id = ?, is_active = ?, is_featured = ?, specs = ?
        WHERE id = ?`,
       [
         name,
         slug,
         description,
+        short_description?.trim?.() || "",
         price,
         sale_price ?? null,
         stock,
@@ -86,6 +108,26 @@ export async function PUT(
         id,
       ]
     )
+
+    const normalizedImages = Array.isArray(general_images)
+      ? general_images
+          .filter((image): image is ProductImageInput => !!image && typeof image === "object")
+          .map((image, index) => ({
+            url: image.url?.toString().trim() ?? "",
+            sort_order: Number(image.sort_order ?? index + 1),
+          }))
+          .filter((image) => image.url.length > 0)
+      : []
+
+    await execute("DELETE FROM product_images WHERE product_id = ? AND variant_id IS NULL", [id])
+
+    for (const image of normalizedImages) {
+      await execute(
+        "INSERT INTO product_images (id, product_id, variant_id, url, sort_order) VALUES (?, ?, NULL, ?, ?)",
+        [crypto.randomUUID(), id, image.url, image.sort_order]
+      )
+    }
+
     const [rows] = await query("SELECT * FROM products WHERE id = ? LIMIT 1", [id])
     return Response.json(serializeProduct(rows[0]))
   } catch (error: any) {

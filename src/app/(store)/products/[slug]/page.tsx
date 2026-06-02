@@ -33,6 +33,8 @@ type ProductRow = RowDataPacket & {
 
 type ImageRow = RowDataPacket & {
   id: string
+  product_id: string
+  variant_id: string | null
   url: string
   sort_order: number
 }
@@ -88,7 +90,7 @@ async function getProduct(slug: string): Promise<Product | null> {
   if (!product) return null
 
   const [images] = await query<ImageRow[]>(
-    "SELECT id, url, sort_order FROM product_images WHERE product_id = ? ORDER BY sort_order ASC",
+    "SELECT id, product_id, variant_id, url, sort_order FROM product_images WHERE product_id = ? ORDER BY sort_order ASC",
     [product.id]
   )
 
@@ -152,17 +154,30 @@ async function getProduct(slug: string): Promise<Product | null> {
       : null,
     images: images.map((image) => ({
       id: image.id,
+      variant_id: image.variant_id,
       url: image.url,
       sort_order: Number(image.sort_order ?? 0),
     })),
-    variants: variants.map((variant) => ({
-      id: variant.id,
-      name: variant.name,
-      price_override: variant.price_override?.toString?.() ?? null,
-      stock: Number(variant.stock ?? 0),
-      is_active: Boolean(variant.is_active),
-      attributes: parseRecord(variant.attributes) as Record<string, string>,
-    })),
+    variants: variants.map((variant) => {
+      const parsedAttributes = parseRecord(variant.attributes) as Record<string, string>
+
+      return {
+        id: variant.id,
+        name: variant.name,
+        price_override: variant.price_override?.toString?.() ?? null,
+        stock: Number(variant.stock ?? 0),
+        is_active: Boolean(variant.is_active),
+        attributes: parsedAttributes,
+        images: images
+          .filter((image) => image.variant_id === variant.id)
+          .map((image) => ({
+            id: image.id,
+            variant_id: image.variant_id,
+            url: image.url,
+            sort_order: Number(image.sort_order ?? 0),
+          })),
+      }
+    }),
     related,
   }
 }

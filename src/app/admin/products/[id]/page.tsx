@@ -7,9 +7,11 @@ import { ArrowLeft, Save } from "lucide-react"
 import { AdminBtn } from "@/components/ui/button"
 import { FormInput, FormTextarea, FormSelect, FormToggle } from "@/components/ui/form-fields"
 import { ImageUpload } from "@/components/ui/image-upload"
+import { getProductGeneralImageFolder } from "@/lib/cloudinary-product-folders"
 
 interface Category { id: string; name: string }
 interface Brand { id: string; name: string }
+interface ProductImageItem { id?: string; url: string; sort_order: number }
 interface ProductFormState {
   name: string
   slug: string
@@ -39,6 +41,7 @@ interface ProductResponse {
   is_active?: boolean
   is_featured?: boolean
   specs?: Record<string, string | number | null>
+  images?: { id?: string; variant_id?: string | null; url?: string | null; sort_order?: number | null }[]
   category?: { id?: string | null } | null
   brand?: { id?: string | null } | null
 }
@@ -68,6 +71,7 @@ export default function EditProductPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
   const [specItems, setSpecItems] = useState<SpecItem[]>([{ key: "", value: "" }])
+  const [generalImages, setGeneralImages] = useState<ProductImageItem[]>([])
 
   const normalizeOptions = (items: unknown[]): { id: string; name: string }[] =>
     items
@@ -106,7 +110,15 @@ export default function EditProductPage() {
         key,
         value: typeof value === "string" ? value : String(value ?? ""),
       }))
+      const nextGeneralImages = (nextProduct.images ?? [])
+        .filter((image) => image.variant_id == null && image.url)
+        .map((image, index) => ({
+          id: image.id,
+          url: image.url ?? "",
+          sort_order: Number(image.sort_order ?? index + 1),
+        }))
       setSpecItems(nextSpecItems.length > 0 ? nextSpecItems : [{ key: "", value: "" }])
+      setGeneralImages(nextGeneralImages)
       setLoading(false)
     })
   }, [id])
@@ -123,6 +135,36 @@ export default function EditProductPage() {
     setSpecItems((prev) => (prev.length === 1 ? [{ key: "", value: "" }] : prev.filter((_, idx) => idx !== index)))
   }
 
+  const syncGeneralImageOrder = (items: ProductImageItem[]) =>
+    items.map((item, index) => ({ ...item, sort_order: index + 1 }))
+
+  const addGeneralImage = () => {
+    setGeneralImages((prev) => syncGeneralImageOrder([...prev, { url: "", sort_order: prev.length + 1 }]))
+  }
+
+  const updateGeneralImage = (index: number, nextUrl: string) => {
+    setGeneralImages((prev) =>
+      prev.map((image, imageIndex) =>
+        imageIndex === index ? { ...image, url: nextUrl, sort_order: imageIndex + 1 } : image
+      )
+    )
+  }
+
+  const removeGeneralImage = (index: number) => {
+    setGeneralImages((prev) => syncGeneralImageOrder(prev.filter((_, imageIndex) => imageIndex !== index)))
+  }
+
+  const moveGeneralImage = (index: number, direction: -1 | 1) => {
+    setGeneralImages((prev) => {
+      const nextIndex = index + direction
+      if (nextIndex < 0 || nextIndex >= prev.length) return prev
+      const next = [...prev]
+      const [current] = next.splice(index, 1)
+      next.splice(nextIndex, 0, current)
+      return syncGeneralImageOrder(next)
+    })
+  }
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -136,12 +178,21 @@ export default function EditProductPage() {
       return acc
     }, {})
 
+    const normalizedGeneralImages = generalImages
+      .map((image, index) => ({
+        ...image,
+        url: image.url.trim(),
+        sort_order: index + 1,
+      }))
+      .filter((image) => image.url.length > 0)
+
     const res = await fetch(`/api/admin/products/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
         specs,
+        general_images: normalizedGeneralImages,
         price: Number(form.price),
         sale_price: form.sale_price ? Number(form.sale_price) : null,
         stock: Number(form.stock),
@@ -214,10 +265,71 @@ export default function EditProductPage() {
           <h3 className="form-section-title">Media</h3>
           <ImageUpload
             label="Thumbnail"
-            uploadFolder="datn-ecomm/products"
+            uploadFolder={form.slug.trim() ? getProductGeneralImageFolder(form.slug) : "products/drafts/general"}
             value={form.thumbnail_url ?? ""}
             onChange={(url) => setForm((f) => ({ ...f, thumbnail_url: url }))}
           />
+
+          <div className="gallery-section">
+            <div className="gallery-header-row">
+              <div>
+                <h4 className="gallery-title">General Product Gallery</h4>
+                <p className="gallery-sub">Upload multiple shared images for laptops, monitors, and other non-variant product views.</p>
+              </div>
+              <button type="button" onClick={addGeneralImage} className="gallery-add-btn">
+                + Add Gallery Image
+              </button>
+            </div>
+
+            {generalImages.length === 0 ? (
+              <div className="gallery-empty">No shared gallery images yet. Add one or more product views here.</div>
+            ) : (
+              <div className="gallery-list">
+                {generalImages.map((image, index) => (
+                  <div key={image.id ?? `gallery-${index}`} className="gallery-card">
+                    <div className="gallery-card-header">
+                      <div>
+                        <div className="gallery-card-title">Image {index + 1}</div>
+                        <div className="gallery-card-order">Sort order: {index + 1}</div>
+                      </div>
+                      <div className="gallery-card-actions">
+                        <button
+                          type="button"
+                          className="gallery-action-btn"
+                          onClick={() => moveGeneralImage(index, -1)}
+                          disabled={index === 0}
+                        >
+                          Up
+                        </button>
+                        <button
+                          type="button"
+                          className="gallery-action-btn"
+                          onClick={() => moveGeneralImage(index, 1)}
+                          disabled={index === generalImages.length - 1}
+                        >
+                          Down
+                        </button>
+                        <button
+                          type="button"
+                          className="gallery-remove-btn"
+                          onClick={() => removeGeneralImage(index)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+
+                    <ImageUpload
+                      label="Gallery Image"
+                      uploadFolder={form.slug.trim() ? getProductGeneralImageFolder(form.slug) : "products/drafts/general"}
+                      value={image.url}
+                      onChange={(url) => updateGeneralImage(index, url)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="form-section">
@@ -273,9 +385,29 @@ export default function EditProductPage() {
         .form-grid-2 { grid-template-columns: 1fr 1fr; }
         .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
         .form-grid-specs { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; align-items: end; }
+        .gallery-section { margin-top: 24px; border-top: 1px solid #1f2937; padding-top: 20px; }
+        .gallery-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+        .gallery-title { font-size: 14px; font-weight: 600; color: #f8fafc; }
+        .gallery-sub { margin-top: 4px; font-size: 12px; line-height: 1.6; color: #94a3b8; max-width: 560px; }
+        .gallery-add-btn { border: 1px solid #374151; background: #0f172a; color: #e5e7eb; border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+        .gallery-empty { border: 1px dashed #334155; border-radius: 12px; padding: 18px; font-size: 13px; color: #94a3b8; background: #0b1220; }
+        .gallery-list { display: grid; gap: 16px; }
+        .gallery-card { border: 1px solid #1f2937; border-radius: 12px; padding: 16px; background: #0b1120; }
+        .gallery-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+        .gallery-card-title { font-size: 13px; font-weight: 600; color: #f8fafc; }
+        .gallery-card-order { margin-top: 4px; font-size: 12px; color: #94a3b8; }
+        .gallery-card-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .gallery-action-btn, .gallery-remove-btn { border: 1px solid #374151; border-radius: 8px; padding: 8px 12px; font-size: 12px; font-weight: 600; }
+        .gallery-action-btn { background: #111827; color: #e5e7eb; }
+        .gallery-action-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .gallery-remove-btn { background: rgba(127,29,29,0.35); border-color: rgba(248,113,113,0.3); color: #fca5a5; }
         .spec-add-btn { width: fit-content; border: 1px solid #374151; background: #0f172a; color: #e5e7eb; border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; }
         .spec-remove-btn { border: 1px solid rgba(248,113,113,0.3); background: rgba(127,29,29,0.35); color: #fca5a5; border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; height: 42px; }
-        @media (max-width: 640px) { .form-grid-2, .form-grid-3, .form-grid-specs { grid-template-columns: 1fr; } .spec-remove-btn { height: auto; } }
+        @media (max-width: 640px) {
+          .form-grid-2, .form-grid-3, .form-grid-specs { grid-template-columns: 1fr; }
+          .spec-remove-btn { height: auto; }
+          .gallery-header-row, .gallery-card-header { flex-direction: column; }
+        }
       `}</style>
     </div>
   )

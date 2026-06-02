@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect, useMemo } from "react"
+import { useState, useRef, useCallback } from "react"
 import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react"
 
 interface ImageUploadProps {
@@ -27,7 +27,6 @@ export function ImageUpload({
   placeholder = "Drag & drop or click to upload",
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false)
-  const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -46,7 +45,6 @@ export function ImageUpload({
         if (!res.ok) throw new Error(data.error || "Upload failed")
 
         onChange(data.url)
-        setPendingFile(null)
       } catch (err: unknown) {
         setError(getErrorMessage(err))
       } finally {
@@ -56,40 +54,27 @@ export function ImageUpload({
     [onChange, uploadFolder],
   )
 
-  const queueFile = (file: File) => {
-    setError(null)
-    setPendingFile(file)
+  const handleFileSelection = (file: File | null | undefined) => {
+    if (!file || uploading) return
+    void upload(file)
   }
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) queueFile(file)
+    handleFileSelection(e.target.files?.[0])
     if (fileRef.current) fileRef.current.value = ""
   }
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setDragOver(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) queueFile(file)
+    handleFileSelection(e.dataTransfer.files?.[0])
   }
 
   const clear = () => {
     onChange("")
     setError(null)
-    setPendingFile(null)
   }
 
-  const pendingPreviewUrl = useMemo(() => {
-    if (!pendingFile) return null
-    return URL.createObjectURL(pendingFile)
-  }, [pendingFile])
-
-  useEffect(() => {
-    return () => {
-      if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl)
-    }
-  }, [pendingPreviewUrl])
 
   return (
     <>
@@ -101,9 +86,9 @@ export function ImageUpload({
           </label>
         )}
 
-        {value || pendingPreviewUrl ? (
+        {value.trim() ? (
           <div className="img-upload-preview">
-            <img src={pendingPreviewUrl ?? value} alt="Preview" className="img-upload-img" />
+            <img src={value.trim()} alt="Preview" className="img-upload-img" />
             <div className="img-upload-overlay">
               <button
                 type="button"
@@ -116,14 +101,13 @@ export function ImageUpload({
               <button
                 type="button"
                 className="img-upload-change"
-                onClick={() => fileRef.current?.click()}
+                onClick={() => !uploading && fileRef.current?.click()}
+                disabled={uploading}
               >
                 Change
               </button>
             </div>
-            <div className="img-upload-url">
-              {pendingFile ? `Preview: ${pendingFile.name}` : value}
-            </div>
+            <div className="img-upload-url">{value}</div>
           </div>
         ) : (
           <div
@@ -131,7 +115,7 @@ export function ImageUpload({
             onClick={() => !uploading && fileRef.current?.click()}
             onDragOver={(e) => {
               e.preventDefault()
-              setDragOver(true)
+              if (!uploading) setDragOver(true)
             }}
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
@@ -152,30 +136,6 @@ export function ImageUpload({
             )}
           </div>
         )}
-
-        {pendingFile ? (
-          <div className="img-upload-pending">
-            <div className="img-upload-pending-name">{pendingFile.name}</div>
-            <div className="img-upload-pending-actions">
-              <button
-                type="button"
-                className="img-upload-pending-confirm"
-                onClick={() => upload(pendingFile)}
-                disabled={uploading}
-              >
-                Confirm upload
-              </button>
-              <button
-                type="button"
-                className="img-upload-pending-cancel"
-                onClick={() => setPendingFile(null)}
-                disabled={uploading}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : null}
 
         {error && <div className="img-upload-error">{error}</div>}
 
@@ -336,57 +296,6 @@ export function ImageUpload({
           border-top: 1px solid #1f2937;
         }
 
-        .img-upload-pending {
-          border: 1px solid #374151;
-          border-radius: 10px;
-          padding: 10px 12px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-          background: #0f1117;
-        }
-        .img-upload-pending-name {
-          font-size: 12px;
-          color: #cbd5e1;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        .img-upload-pending-actions {
-          display: flex;
-          gap: 8px;
-          flex-shrink: 0;
-        }
-        .img-upload-pending-confirm,
-        .img-upload-pending-cancel {
-          border: 1px solid #374151;
-          border-radius: 8px;
-          padding: 6px 10px;
-          font-size: 12px;
-          cursor: pointer;
-          transition: background 0.15s, border-color 0.15s, color 0.15s;
-        }
-        .img-upload-pending-confirm {
-          background: #2563eb;
-          border-color: #2563eb;
-          color: #fff;
-        }
-        .img-upload-pending-confirm:hover:not(:disabled) {
-          background: #1d4ed8;
-        }
-        .img-upload-pending-cancel {
-          background: transparent;
-          color: #cbd5e1;
-        }
-        .img-upload-pending-cancel:hover:not(:disabled) {
-          background: #1f2937;
-        }
-        .img-upload-pending-confirm:disabled,
-        .img-upload-pending-cancel:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
 
         .img-upload-url-input-wrap {
           position: relative;

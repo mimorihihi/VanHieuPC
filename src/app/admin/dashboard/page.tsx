@@ -1,16 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import {
-  ShoppingBag,
-  ShoppingCart,
-  Users,
-  Clock,
-  TrendingUp,
-  ArrowUpRight,
-  Tag,
-} from "lucide-react"
 import Link from "next/link"
+import { ArrowUpRight, Clock, ShoppingBag, ShoppingCart, Tag, TrendingUp, UserCog, Users } from "lucide-react"
+import { useEffect, useState } from "react"
 
 interface Stats {
   totalProducts: number
@@ -25,30 +17,10 @@ function fmt(n: string | number) {
 }
 
 const quickLinks = [
-  {
-    href: "/admin/products/new",
-    label: "Add Product",
-    icon: ShoppingBag,
-    iconClass: "text-indigo-400 bg-indigo-400/20",
-  },
-  {
-    href: "/admin/orders",
-    label: "View Orders",
-    icon: ShoppingCart,
-    iconClass: "text-cyan-400 bg-cyan-400/20",
-  },
-  {
-    href: "/admin/users",
-    label: "Manage Users",
-    icon: Users,
-    iconClass: "text-emerald-400 bg-emerald-400/20",
-  },
-  {
-    href: "/admin/categories",
-    label: "Categories",
-    icon: Tag,
-    iconClass: "text-amber-400 bg-amber-400/20",
-  },
+  { href: "/admin/products/new", label: "Add Product", icon: ShoppingBag },
+  { href: "/admin/orders", label: "View Orders", icon: ShoppingCart },
+  { href: "/admin/users", label: "Manage Users", icon: UserCog },
+  { href: "/admin/categories", label: "Categories", icon: Tag },
 ]
 
 export default function DashboardPage() {
@@ -63,104 +35,72 @@ export default function DashboardPage() {
   }, [])
 
   const cards = [
-    {
-      label: "Total Products",
-      value: stats?.totalProducts ?? 0,
-      icon: ShoppingBag,
-      valueClass: "text-indigo-400",
-      cardClass: "border-indigo-400/30 bg-indigo-400/10",
-      iconClass: "text-indigo-400 bg-indigo-400/20",
-      href: "/admin/products",
-    },
-    {
-      label: "Total Orders",
-      value: stats?.totalOrders ?? 0,
-      icon: ShoppingCart,
-      valueClass: "text-cyan-400",
-      cardClass: "border-cyan-400/30 bg-cyan-400/10",
-      iconClass: "text-cyan-400 bg-cyan-400/20",
-      href: "/admin/orders",
-    },
-    {
-      label: "Total Users",
-      value: stats?.totalUsers ?? 0,
-      icon: Users,
-      valueClass: "text-emerald-400",
-      cardClass: "border-emerald-400/30 bg-emerald-400/10",
-      iconClass: "text-emerald-400 bg-emerald-400/20",
-      href: "/admin/users",
-    },
-    {
-      label: "Pending Orders",
-      value: stats?.pendingOrders ?? 0,
-      icon: Clock,
-      valueClass: "text-amber-400",
-      cardClass: "border-amber-400/30 bg-amber-400/10",
-      iconClass: "text-amber-400 bg-amber-400/20",
-      href: "/admin/orders?status=PENDING",
-    },
+    { label: "Total Products", value: stats?.totalProducts ?? 0, icon: ShoppingBag, href: "/admin/products" },
+    { label: "Total Orders", value: stats?.totalOrders ?? 0, icon: ShoppingCart, href: "/admin/orders" },
+    { label: "Total Users", value: stats?.totalUsers ?? 0, icon: Users, href: "/admin/users" },
+    { label: "Pending Orders", value: stats?.pendingOrders ?? 0, icon: Clock, href: "/admin/orders?status=PENDING" },
   ]
 
   return (
-    <div>
-      <div className="mb-7">
-        <h1 className="mb-1 text-2xl font-bold text-slate-100 md:text-[26px]">
-          Welcome back, Admin
-        </h1>
-        <p className="text-sm text-zinc-500">
-          Here&apos;s what&apos;s happening in your store today.
-        </p>
-      </div>
-
-      <div className="mb-6 flex flex-col justify-between gap-4 rounded-2xl border border-indigo-400/30 bg-gradient-to-br from-indigo-400/15 to-violet-400/15 p-6 md:flex-row md:items-center md:px-7">
-        <div className="flex items-center gap-4">
-          <TrendingUp className="h-6 w-6 text-indigo-400 md:h-7 md:w-7" />
+    <div className="space-y-8">
+      <section className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm md:p-8">
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>
-            <div className="mb-1 text-xs text-zinc-400">Total Revenue</div>
-            <div className="text-3xl font-bold tracking-tight text-indigo-300 md:text-4xl">
-              {loading ? "-" : `? ${fmt(stats?.revenue ?? 0)}`}
+            <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Overview</p>
+            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-zinc-900">Welcome back, Admin</h2>
+            <p className="mt-2 text-sm text-zinc-500">Here&apos;s a quick snapshot of your store performance today.</p>
+          </div>
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-zinc-200 text-zinc-700">
+                <TrendingUp className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-zinc-400">Revenue</p>
+                <p className="mt-1 text-2xl font-semibold text-zinc-900">{loading ? "-" : `${fmt(stats?.revenue ?? 0)} đ`}</p>
+              </div>
             </div>
           </div>
         </div>
-        <div className="inline-flex w-fit items-center gap-1 rounded-full bg-indigo-400/20 px-4 py-2 text-xs font-medium text-indigo-300">
-          <ArrowUpRight className="h-4 w-4" /> Paid Orders
-        </div>
-      </div>
+      </section>
 
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map(({ label, value, icon: Icon, valueClass, cardClass, iconClass, href }) => (
-          <Link key={label} href={href ?? "#"} className="block no-underline">
-            <div className={`flex items-center gap-4 rounded-xl border p-5 transition-transform hover:-translate-y-0.5 ${cardClass}`}>
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${iconClass}`}>
-                <Icon className="h-6 w-6" />
-              </div>
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {cards.map(({ label, value, icon: Icon, href }) => (
+          <Link key={label} href={href} className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition-colors hover:border-zinc-300 hover:bg-zinc-50">
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <div className={`text-[28px] leading-none font-bold ${valueClass}`}>
-                  {loading ? "-" : fmt(value)}
-                </div>
-                <div className="mt-1 text-xs text-zinc-500">{label}</div>
+                <p className="text-sm text-zinc-500">{label}</p>
+                <p className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">{loading ? "-" : fmt(value)}</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-900">
+                <Icon className="h-5 w-5" />
               </div>
             </div>
           </Link>
         ))}
-      </div>
+      </section>
 
-      <h2 className="mb-4 text-base font-semibold text-slate-100">Quick Actions</h2>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {quickLinks.map(({ href, label, icon: Icon, iconClass }) => (
-          <Link
-            key={href}
-            href={href}
-            className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-5 text-slate-200 no-underline transition-all hover:-translate-y-0.5 hover:border-zinc-700 hover:bg-zinc-800"
-          >
-            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${iconClass}`}>
-              <Icon className="h-6 w-6" />
-            </div>
-            <span className="flex-1 text-sm font-medium">{label}</span>
-            <ArrowUpRight className="h-4 w-4 shrink-0 text-zinc-500" />
-          </Link>
-        ))}
-      </div>
+      <section>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-zinc-900">Quick Actions</h3>
+          <p className="mt-1 text-sm text-zinc-500">Open the most common admin flows from here.</p>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {quickLinks.map(({ href, label, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-5 text-zinc-900 shadow-sm transition-colors hover:border-zinc-300 hover:bg-zinc-50"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-900">
+                <Icon className="h-5 w-5" />
+              </div>
+              <span className="flex-1 text-sm font-medium">{label}</span>
+              <ArrowUpRight className="h-4 w-4 text-zinc-400" />
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }

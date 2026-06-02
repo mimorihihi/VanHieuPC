@@ -118,7 +118,7 @@ export default function RegisterPage() {
       <main className="flex-1 bg-zinc-50">
         <section className="container mx-auto px-4 py-10">
           <div className="mb-4 flex items-center gap-2 text-[11px] text-zinc-500">
-            <Link href="/" className="hover:text-blue-600">
+            <Link href="/" className="hover:text-zinc-900">
               Home
             </Link>
             <span>&bull;</span>
@@ -151,7 +151,7 @@ export default function RegisterPage() {
                     placeholder="Your Full Name"
                     value={values.name}
                     onChange={(event) => handleChange("name", event.target.value)}
-                    className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600"
+                    className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900"
                   />
                   {errors.name ? <p className="text-xs text-red-500">{errors.name}</p> : null}
                 </div>
@@ -166,7 +166,7 @@ export default function RegisterPage() {
                     placeholder="Your Email"
                     value={values.email}
                     onChange={(event) => handleChange("email", event.target.value)}
-                    className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600"
+                    className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900"
                   />
                   {errors.email ? <p className="text-xs text-red-500">{errors.email}</p> : null}
                 </div>
@@ -183,7 +183,7 @@ export default function RegisterPage() {
                     placeholder="Create Password"
                     value={values.password}
                     onChange={(event) => handleChange("password", event.target.value)}
-                    className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600"
+                    className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900"
                   />
                   {errors.password ? <p className="text-xs text-red-500">{errors.password}</p> : null}
                 </div>
@@ -198,7 +198,7 @@ export default function RegisterPage() {
                     placeholder="Confirm Password"
                     value={values.confirmPassword}
                     onChange={(event) => handleChange("confirmPassword", event.target.value)}
-                    className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600"
+                    className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900"
                   />
                   {errors.confirmPassword ? <p className="text-xs text-red-500">{errors.confirmPassword}</p> : null}
                 </div>
@@ -214,7 +214,7 @@ export default function RegisterPage() {
                   placeholder="Your Phone Number"
                   value={values.phone}
                   onChange={(event) => handleChange("phone", event.target.value)}
-                  className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600"
+                  className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900"
                 />
                 {errors.phone ? <p className="text-xs text-red-500">{errors.phone}</p> : null}
               </div>
@@ -230,7 +230,7 @@ export default function RegisterPage() {
 
                 <p className="text-xs text-zinc-600">
                   Already have an account?{" "}
-                  <Link href="/login" className="font-semibold text-blue-600 hover:underline">
+                  <Link href="/login" className="font-semibold text-zinc-900 hover:underline">
                     Sign In
                   </Link>
                 </p>

@@ -38,6 +38,14 @@ type RelatedRow = RowDataPacket & {
   avg_rating: number | string | null
 }
 
+type ImageRow = RowDataPacket & {
+  id: string
+  product_id: string
+  variant_id: string | null
+  url: string
+  sort_order: number
+}
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -88,8 +96,8 @@ export async function GET(
         }
       : null
 
-    const [images] = await query(
-      "SELECT id, url, sort_order FROM product_images WHERE product_id = ? ORDER BY sort_order ASC",
+    const [images] = await query<ImageRow[]>(
+      "SELECT id, product_id, variant_id, url, sort_order FROM product_images WHERE product_id = ? ORDER BY sort_order ASC",
       [product.id]
     )
     product.images = images
@@ -101,16 +109,21 @@ export async function GET(
        ORDER BY name ASC`,
       [product.id]
     )
-    product.variants = variants.map((variant) => ({
-      ...variant,
-      price_override: variant.price_override?.toString?.() ?? null,
-      stock: Number(variant.stock ?? 0),
-      is_active: Boolean(variant.is_active),
-      attributes:
+    product.variants = variants.map((variant) => {
+      const parsedAttributes =
         typeof variant.attributes === "string"
           ? JSON.parse(variant.attributes)
-          : variant.attributes,
-    }))
+          : variant.attributes
+
+      return {
+        ...variant,
+        price_override: variant.price_override?.toString?.() ?? null,
+        stock: Number(variant.stock ?? 0),
+        is_active: Boolean(variant.is_active),
+        attributes: parsedAttributes,
+        images: images.filter((image) => image.variant_id === variant.id),
+      }
+    })
 
     let related: RelatedRow[] = []
     if (product.category_id) {

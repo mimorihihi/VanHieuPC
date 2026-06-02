@@ -1,8 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   ChevronRight,
   Heart,
@@ -256,6 +256,8 @@ export function UserDashboardClient() {
       await loadDashboard(auth.id)
     })()
   }, [router, loadDashboard])
+
+
 
   const handleLogout = () => {
     window.localStorage.removeItem("auth_user")

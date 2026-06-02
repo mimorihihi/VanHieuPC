@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
-import { Plus, Pencil, Trash2, Search, Star } from "lucide-react"
 import Link from "next/link"
+import { useCallback, useEffect, useState, type ChangeEvent } from "react"
+import { Pencil, Plus, Search, Star, Trash2 } from "lucide-react"
 import { Modal } from "@/components/ui/modal"
 import { AdminBtn } from "@/components/ui/button"
 
@@ -43,15 +43,13 @@ export default function ProductsPage() {
 
   const limit = 15
 
-
-
   const fetchProducts = useCallback(() => {
     setLoading(true)
     fetch(`/api/admin/products?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`)
-      .then((r) => r.json())
-      .then((d) => {
-        setProducts(d.products ?? [])
-        setTotal(d.total ?? 0)
+      .then((response) => response.json())
+      .then((data) => {
+        setProducts(data.products ?? [])
+        setTotal(data.total ?? 0)
       })
       .finally(() => setLoading(false))
   }, [page, search])
@@ -60,14 +58,14 @@ export default function ProductsPage() {
     const timer = setTimeout(() => {
       fetchProducts()
     }, 0)
+
     return () => clearTimeout(timer)
   }, [fetchProducts])
 
-  const openDelete = (p: Product) => {
-    setSelected(p)
+  const openDelete = (product: Product) => {
+    setSelected(product)
     setModal("delete")
   }
-
 
   const deleteProduct = async () => {
     setSaving(true)
@@ -80,134 +78,154 @@ export default function ProductsPage() {
   const totalPages = Math.ceil(total / limit)
 
   return (
-    <div>
-      <div className="mb-6 flex items-start justify-between gap-4">
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-[22px] font-bold text-slate-100">Products</h1>
-          <p className="mt-0.5 text-xs text-zinc-500">{total} total products</p>
+          <h2 className="text-2xl font-semibold text-zinc-900">Products</h2>
+          <p className="mt-1 text-sm text-zinc-500">{total} total products</p>
         </div>
         <Link href="/admin/products/new">
           <AdminBtn>
-            <Plus className="mr-2 h-4 w-4" /> Add Product
+            <Plus className="mr-2 h-4 w-4" />
+            Add Product
           </AdminBtn>
         </Link>
       </div>
 
-      <div className="mb-4 max-w-sm">
-        <div className="relative">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+      <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <div className="relative w-full max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
-            className="h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 py-2 pr-3 pl-9 text-sm text-slate-200 outline-none transition-colors placeholder:text-zinc-500 focus:border-indigo-500"
+            id="admin-products-search"
+            className="h-10 w-full rounded-xl border border-zinc-300 bg-zinc-50 py-2 pl-9 pr-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-400"
             placeholder="Search products..."
             value={search}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-              setSearch(e.target.value)
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setSearch(event.target.value)
               setPage(1)
             }}
           />
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-zinc-800">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr>
-              {["Product", "Category", "Price", "Stock", "Rating", "Status", "Actions"].map((head) => (
-                <th key={head} className="border-b border-zinc-800 bg-zinc-950 px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 uppercase">
-                  {head}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-zinc-200 text-sm">
+            <thead className="bg-zinc-100">
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-zinc-500">Loading...</td>
+                {["Product", "Category", "Price", "Stock", "Rating", "Status", "Actions"].map((head) => (
+                  <th key={head} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                    {head}
+                  </th>
+                ))}
               </tr>
-            ) : products.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-zinc-500">No products found</td>
-              </tr>
-            ) : (
-              products.map((p, i) => (
-                <tr key={p.id || i} className="border-b border-zinc-800 last:border-b-0 hover:bg-white/[0.02]">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      {p.thumbnail_url ? (
-                        <img src={p.thumbnail_url} alt={p.name || "Product"} className="h-10 w-10 rounded-lg bg-zinc-800 object-cover" />
-                      ) : (
-                        <div className="h-10 w-10 shrink-0 rounded-lg bg-zinc-800" />
-                      )}
-                      <div>
-                        <div className="max-w-[220px] truncate font-medium text-slate-100">{p.name}</div>
-                        <div className="text-xs text-zinc-500">{p.slug}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex rounded-md bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">{p.category?.name ?? "-"}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-semibold text-slate-100">₫{Number(p.price || 0).toLocaleString()}</span>
-                      {p.sale_price && <span className="text-xs text-indigo-300">₫{Number(p.sale_price).toLocaleString()}</span>}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${Number(p.stock || 0) > 0 ? "bg-emerald-400/15 text-emerald-300" : "bg-red-400/15 text-red-300"}`}>
-                      {p.stock || 0}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 text-amber-300">
-                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                      <span>{p.avg_rating || "0"}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${p.is_active ? "bg-emerald-400/15 text-emerald-300" : "bg-red-400/15 text-red-300"}`}>
-                        {p.is_active ? "Active" : "Inactive"}
-                      </span>
-                      {p.is_featured && <span className="inline-flex rounded-md bg-violet-400/15 px-2 py-0.5 text-xs font-medium text-violet-300">Featured</span>}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1.5">
-                      <Link href={`/admin/products/${p.id}`} className="rounded-md p-1.5 text-indigo-400 transition-colors hover:bg-indigo-500/15">
-                        <Pencil className="h-4 w-4" />
-                      </Link>
-                      <button className="rounded-md p-1.5 text-red-400 transition-colors hover:bg-red-500/15" onClick={() => openDelete(p)}>
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+            </thead>
+            <tbody className="divide-y divide-zinc-100 bg-white">
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-zinc-500">
+                    Loading...
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : products.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-zinc-500">
+                    No products found
+                  </td>
+                </tr>
+              ) : (
+                products.map((product) => (
+                  <tr key={product.id} className="transition-colors hover:bg-zinc-50">
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        {product.thumbnail_url ? (
+                          <img src={product.thumbnail_url} alt={product.name || "Product"} className="h-10 w-10 rounded-lg border border-zinc-200 bg-zinc-100 object-cover" />
+                        ) : (
+                          <div className="h-10 w-10 shrink-0 rounded-lg border border-zinc-200 bg-zinc-100" />
+                        )}
+                        <div>
+                          <p className="max-w-[220px] truncate font-medium text-zinc-900">{product.name}</p>
+                          <p className="text-xs text-zinc-500">{product.slug}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700">{product.category?.name ?? "-"}</span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-zinc-900">₫{Number(product.price || 0).toLocaleString()}</span>
+                        {product.sale_price ? <span className="text-xs text-zinc-500">₫{Number(product.sale_price).toLocaleString()}</span> : null}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={Number(product.stock || 0) > 0 ? "inline-flex rounded-full bg-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700" : "inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-500"}>
+                        {product.stock || 0}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-1 text-zinc-700">
+                        <Star className="h-3.5 w-3.5 fill-zinc-400 text-zinc-400" />
+                        <span>{product.avg_rating || "0"}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={product.is_active ? "inline-flex rounded-full bg-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700" : "inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-500"}>
+                          {product.is_active ? "Active" : "Inactive"}
+                        </span>
+                        {product.is_featured ? <span className="inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600">Featured</span> : null}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/admin/products/${product.id}`}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-100 text-zinc-700 transition-colors hover:bg-zinc-200"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Link>
+                        <button
+                          id={`admin-product-delete-${product.id}`}
+                          type="button"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-100 text-zinc-700 transition-colors hover:bg-zinc-200"
+                          onClick={() => openDelete(product)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {totalPages > 1 && (
-        <div className="mt-5 flex items-center justify-center gap-4">
-          <AdminBtn variant="secondary" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+      {totalPages > 1 ? (
+        <div className="flex items-center justify-center gap-4">
+          <AdminBtn variant="secondary" size="sm" disabled={page === 1} onClick={() => setPage((prev) => prev - 1)}>
             Previous
           </AdminBtn>
           <span className="text-sm text-zinc-500">Page {page} of {totalPages}</span>
-          <AdminBtn variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+          <AdminBtn variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage((prev) => prev + 1)}>
             Next
           </AdminBtn>
         </div>
-      )}
+      ) : null}
 
       <Modal open={modal === "delete"} onClose={() => setModal(null)} title="Delete Product" size="sm">
-        <p className="mb-6 text-sm text-zinc-400">
-          Are you sure you want to delete <strong className="text-slate-100">{selected?.name}</strong>? This action cannot be undone.
+        <p className="mb-6 text-sm text-zinc-600">
+          Are you sure you want to delete <strong className="text-zinc-900">{selected?.name}</strong>? This action cannot be undone.
         </p>
         <div className="flex justify-end gap-3">
-          <AdminBtn variant="secondary" onClick={() => setModal(null)}>Cancel</AdminBtn>
-          <AdminBtn variant="danger" loading={saving} onClick={deleteProduct}>Delete</AdminBtn>
+          <AdminBtn variant="secondary" onClick={() => setModal(null)}>
+            Cancel
+          </AdminBtn>
+          <AdminBtn variant="danger" loading={saving} onClick={deleteProduct}>
+            Delete
+          </AdminBtn>
         </div>
       </Modal>
     </div>

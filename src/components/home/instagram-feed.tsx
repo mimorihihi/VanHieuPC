@@ -1,36 +1,38 @@
-"use client"
-
-import React from 'react'
+import { STATIC_HOME_NEWS } from "@/lib/mock-home-news"
 
 export function InstagramFeed() {
-  const images = [
-    "/images/instagram/1.jpg",
-    "/images/instagram/2.jpg",
-    "/images/instagram/3.jpg",
-    "/images/instagram/4.jpg",
-    "/images/instagram/5.jpg",
-    "/images/instagram/6.jpg",
-  ]
-
   return (
-    <section className="py-8 bg-white">
+    <section className="bg-white py-8 lg:py-10">
       <div className="container mx-auto px-4">
-        <h2 className="text-sm font-bold text-zinc-900 mb-6">Follow us on Instagram for News, Offers & More</h2>
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-          {images.map((img, i) => (
-            <div key={i} className="aspect-square relative overflow-hidden group cursor-pointer rounded bg-zinc-200">
-              <img
-                src={img}
-                alt={`Instagram ${i + 1}`}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none'
-                }}
-              />
-              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        <h2 className="mb-6 text-sm font-bold text-zinc-900">
+          Follow us on Instagram for News, Offers & More
+        </h2>
+
+        <div className="grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 xl:grid-cols-6">
+          {STATIC_HOME_NEWS.map((item) => (
+            <article key={item.id} className="group">
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noreferrer"
+                className="block overflow-hidden bg-zinc-100"
+              >
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  className="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </a>
+
+              <div className="px-1 pt-3 text-center">
+                <p className="line-clamp-5 text-[10px] leading-4 text-zinc-700 md:text-[11px]">
+                  {item.excerpt}
+                </p>
+                <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-zinc-400">
+                  {item.publishedAt}
+                </p>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       </div>

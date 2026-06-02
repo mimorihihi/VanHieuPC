@@ -57,18 +57,33 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { name, slug, description, price, sale_price, stock, thumbnail_url, category_id, brand_id, is_active, is_featured, specs } = body
+    const {
+      name,
+      slug,
+      description,
+      short_description,
+      price,
+      sale_price,
+      stock,
+      thumbnail_url,
+      category_id,
+      brand_id,
+      is_active,
+      is_featured,
+      specs,
+    } = body
 
     const id = crypto.randomUUID()
     await execute(
       `INSERT INTO products
-      (id, name, slug, description, price, sale_price, stock, thumbnail_url, category_id, brand_id, specs, avg_rating, is_active, is_featured, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, NOW())`,
+      (id, name, slug, description, short_description, price, sale_price, stock, thumbnail_url, category_id, brand_id, specs, avg_rating, is_active, is_featured, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, NOW())`,
       [
         id,
         name,
         slug,
         description ?? "",
+        short_description?.trim?.() || "",
         price,
         sale_price ?? null,
         stock ?? 0,

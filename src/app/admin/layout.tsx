@@ -1,24 +1,25 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
-  LayoutDashboard,
-  ShoppingBag,
-  Tag,
-  Layers,
-  Users,
-  ShoppingCart,
-  Ticket,
-  Image,
-  Settings,
-  ChevronRight,
-  Menu,
-  X,
   Bell,
+  ChevronRight,
+  Image,
+  Layers,
+  LayoutDashboard,
   LogOut,
+  Menu,
+  Settings,
+  ShoppingBag,
+  ShoppingCart,
+  Tag,
+  Users,
+  X,
 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
+import { AdminBtn } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -27,80 +28,173 @@ const navItems = [
   { href: "/admin/brands", label: "Brands", icon: Tag },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/coupons", label: "Coupons", icon: Ticket },
+  { href: "/admin/coupons", label: "Coupons", icon: Tag },
   { href: "/admin/banners", label: "Banners", icon: Image },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ]
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+type StoredUser = {
+  id: string
+  name: string
+  email: string
+  role: string
+}
+
+export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [authChecked, setAuthChecked] = useState(false)
+  const [currentUser, setCurrentUser] = useState<StoredUser | null>(null)
+
+  const isLoginPage = pathname === "/admin/login"
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const rawUser = window.localStorage.getItem("auth_user")
+    const parsedUser = rawUser ? (JSON.parse(rawUser) as StoredUser) : null
+
+    if (isLoginPage) {
+      if (parsedUser?.role === "ADMIN") {
+        router.replace("/admin/dashboard")
+        return
+      }
+      setAuthChecked(true)
+      return
+    }
+
+    if (!parsedUser || parsedUser.role !== "ADMIN") {
+      router.replace("/admin/login")
+      return
+    }
+
+    setCurrentUser(parsedUser)
+    setAuthChecked(true)
+  }, [isLoginPage, router])
+
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("auth_user")
+    }
+    router.push("/admin/login")
+  }
+
+  if (!authChecked) {
+    return <div className="flex min-h-screen items-center justify-center bg-zinc-100 text-sm text-zinc-500">Loading admin...</div>
+  }
+
+  if (isLoginPage) {
+    return <>{children}</>
+  }
 
   return (
-    <div className="flex min-h-screen bg-zinc-950 text-slate-200">
-      <aside className={`sticky top-0 z-50 flex h-screen shrink-0 flex-col overflow-hidden border-r border-zinc-800 bg-zinc-900 transition-all duration-200 ${sidebarOpen ? "w-60" : "w-16"}`}>
-        <div className="flex min-h-16 items-center justify-between gap-2 border-b border-zinc-800 px-4 py-4">
-          <Link href="/admin/dashboard" className="flex items-center gap-2 overflow-hidden no-underline">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-bold text-white">
-              A
+    <div className="flex min-h-screen bg-zinc-100 text-zinc-900">
+      <aside
+        className={cn(
+          "sticky top-0 z-40 flex h-screen shrink-0 flex-col overflow-hidden border-r border-zinc-200 bg-white transition-all duration-200",
+          sidebarOpen ? "w-64" : "w-18"
+        )}
+      >
+        <div className="flex min-h-16 items-center justify-between gap-2 border-b border-zinc-200 px-4 py-4">
+          <Link href="/admin/dashboard" className="flex items-center gap-3 overflow-hidden no-underline">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-300 bg-zinc-100 text-sm font-semibold text-zinc-900">
+              AD
             </div>
-            {sidebarOpen && <span className="truncate text-base font-bold text-slate-100">AdminPanel</span>}
+            {sidebarOpen ? <span className="truncate text-base font-semibold text-zinc-900">Admin Panel</span> : null}
           </Link>
           <button
-            className="rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-slate-200"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            id="admin-sidebar-toggle"
+            type="button"
+            className="rounded-lg border border-zinc-200 p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+            onClick={() => setSidebarOpen((prev) => !prev)}
             aria-label="Toggle sidebar"
           >
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">
+        <nav className="flex flex-1 flex-col gap-1 p-3">
           {navItems.map(({ href, label, icon: Icon }) => {
             const active = pathname ? pathname === href || pathname.startsWith(`${href}/`) : false
+
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium no-underline transition-colors ${active ? "border-indigo-400/40 bg-indigo-500/15 text-indigo-300" : "border-transparent text-zinc-400 hover:bg-zinc-800 hover:text-slate-200"}`}
+                className={cn(
+                  "flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors",
+                  active
+                    ? "border-zinc-900 bg-zinc-900 text-white"
+                    : "border-transparent text-zinc-600 hover:border-zinc-200 hover:bg-zinc-100 hover:text-zinc-900",
+                  !sidebarOpen && "justify-center px-2"
+                )}
                 title={!sidebarOpen ? label : undefined}
               >
                 <Icon className="h-5 w-5 shrink-0" />
-                {sidebarOpen && <span className="flex-1 truncate">{label}</span>}
-                {sidebarOpen && active && <ChevronRight className="h-4 w-4 shrink-0" />}
+                {sidebarOpen ? <span className="flex-1 truncate">{label}</span> : null}
+                {sidebarOpen && active ? <ChevronRight className="h-4 w-4 shrink-0" /> : null}
               </Link>
             )
           })}
         </nav>
 
-        <div className="border-t border-zinc-800 p-2">
-          <Link
-            href="/"
-            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-500 no-underline transition-colors hover:bg-red-500/10 hover:text-red-300 ${!sidebarOpen ? "justify-center" : ""}`}
-          >
-            <LogOut className="h-5 w-5 shrink-0" />
-            {sidebarOpen && <span className="truncate">Back to Store</span>}
-          </Link>
+        <div className="border-t border-zinc-200 p-3">
+          <div className={cn("mb-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3", !sidebarOpen && "hidden")}>
+            <p className="text-xs font-medium text-zinc-500">Signed in as</p>
+            <p className="mt-1 truncate text-sm font-semibold text-zinc-900">{currentUser?.name ?? "Admin"}</p>
+            <p className="truncate text-xs text-zinc-500">{currentUser?.email}</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Link
+              href="/"
+              className={cn(
+                "flex items-center gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-900",
+                !sidebarOpen && "justify-center px-2"
+              )}
+            >
+              <ShoppingBag className="h-5 w-5 shrink-0" />
+              {sidebarOpen ? <span>Back to Store</span> : null}
+            </Link>
+            <AdminBtn
+              id="admin-logout-button"
+              type="button"
+              variant="ghost"
+              className={cn("justify-start rounded-xl border border-zinc-200 px-3 py-2.5 text-sm", !sidebarOpen && "justify-center px-2")}
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4" />
+              {sidebarOpen ? "Log out" : null}
+            </AdminBtn>
+          </div>
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-zinc-800 bg-zinc-900 px-6">
-          <h2 className="text-lg font-semibold text-slate-100">
-            {navItems.find((n) => pathname && pathname.startsWith(n.href))?.label ?? "Admin"}
-          </h2>
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-zinc-200 bg-white px-6">
+          <div>
+            <p className="text-xs uppercase tracking-[0.18em] text-zinc-400">Administration</p>
+            <h1 className="text-lg font-semibold text-zinc-900">
+              {navItems.find((item) => pathname && pathname.startsWith(item.href))?.label ?? "Admin"}
+            </h1>
+          </div>
           <div className="flex items-center gap-3">
-            <button className="relative rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-slate-200" aria-label="Notifications">
+            <button
+              id="admin-notifications-button"
+              type="button"
+              className="relative rounded-xl border border-zinc-200 bg-white p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+              aria-label="Notifications"
+            >
               <Bell className="h-5 w-5" />
-              <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-red-400" />
+              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-zinc-900" />
             </button>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-xs font-bold text-white">
-              AD
+            <div className="hidden rounded-xl border border-zinc-200 bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700 sm:block">
+              {currentUser?.role ?? "ADMIN"}
             </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-7 max-md:p-4">{children}</main>
+        <main className="flex-1 p-6 md:p-8">{children}</main>
       </div>
     </div>
   )

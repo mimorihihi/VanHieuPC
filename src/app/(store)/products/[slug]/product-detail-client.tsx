@@ -22,7 +22,7 @@ export interface Product {
   specs: Record<string, string>
   category: { id: string; name: string; slug: string } | null
   brand: { id: string; name: string; slug: string } | null
-  images: { id: string; url: string; sort_order: number }[]
+  images: { id: string; variant_id: string | null; url: string; sort_order: number }[]
   variants: {
     id: string
     name: string
@@ -30,6 +30,7 @@ export interface Product {
     stock: number
     is_active: boolean
     attributes: Record<string, string>
+    images: { id: string; variant_id: string | null; url: string; sort_order: number }[]
   }[]
   related: {
     id: string
@@ -41,6 +42,7 @@ export interface Product {
     thumbnail_url: string | null
     avg_rating: number
   }[]
+
 }
 
 const TABS = ["About Product", "Details", "Specs"] as const
@@ -78,13 +80,6 @@ export function ProductDetailClient({ product }: { product: Product }) {
   const [addMessage, setAddMessage] = useState("")
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
 
-  const allImages =
-    product.images.length > 0
-      ? product.images.map((img) => img.url)
-      : product.thumbnail_url
-        ? [product.thumbnail_url]
-        : ["/images/placeholder.png"]
-
   const availableVariants = useMemo(
     () => product.variants.filter((variant) => variant.is_active),
     [product.variants]
@@ -121,6 +116,31 @@ export function ProductDetailClient({ product }: { product: Product }) {
     )
   }, [availableVariants, optionKeys, selectedOptions])
 
+  const sharedImages = useMemo(
+    () => product.images.filter((image) => image.variant_id === null),
+    [product.images]
+  )
+
+  const displayedImages = useMemo(() => {
+    const variantImages = selectedVariant?.images ?? []
+    const sourceImages =
+      variantImages.length > 0
+        ? variantImages
+        : sharedImages.length > 0
+          ? sharedImages
+          : product.images
+
+    if (sourceImages.length > 0) {
+      return sourceImages.map((img) => img.url)
+    }
+
+    if (product.thumbnail_url) {
+      return [product.thumbnail_url]
+    }
+
+    return ["/images/placeholder.png"]
+  }, [product.images, product.thumbnail_url, selectedVariant, sharedImages])
+
   const hasDiscount = product.sale_price && Number(product.sale_price) < Number(product.price)
   const baseCurrentPrice = hasDiscount ? Number(product.sale_price) : Number(product.price)
   const currentPrice = Number(selectedVariant?.price_override ?? baseCurrentPrice)
@@ -155,6 +175,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
       ...prev,
       [key]: value,
     }))
+    setSelectedImage(0)
     setAddMessage("")
   }
 
@@ -427,10 +448,10 @@ export function ProductDetailClient({ product }: { product: Product }) {
               </button>
             </div>
 
-            <img src={allImages[selectedImage]} alt={product.name} className="mb-6 h-[360px] w-full max-w-[320px] object-contain" />
+            <img src={displayedImages[selectedImage]} alt={displayProductName} className="mb-6 h-[360px] w-full max-w-[320px] object-contain" />
 
             <div className="mt-2 flex items-center gap-1.5">
-              {allImages.slice(0, 3).map((_, idx) => (
+              {displayedImages.slice(0, 3).map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedImage(idx)}

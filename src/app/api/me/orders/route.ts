@@ -7,6 +7,8 @@ type OrderRow = RowDataPacket & {
   order_number: string
   status: string
   payment_status: string
+  payment_method: string
+  checkout_option: string | null
   subtotal: number | string
   shipping_fee: number | string
   discount: number | string
@@ -14,6 +16,7 @@ type OrderRow = RowDataPacket & {
   created_at: string
   item_count: number | string
 }
+
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Failed"
@@ -25,6 +28,8 @@ function serializeOrder(order: OrderRow) {
     order_number: order.order_number,
     status: order.status,
     payment_status: order.payment_status,
+    payment_method: order.payment_method,
+    checkout_option: order.checkout_option,
     subtotal: order.subtotal?.toString() ?? "0",
     shipping_fee: order.shipping_fee?.toString() ?? "0",
     discount: order.discount?.toString() ?? "0",
@@ -33,6 +38,7 @@ function serializeOrder(order: OrderRow) {
     item_count: Number(order.item_count ?? 0),
   }
 }
+
 
 export async function GET(req: NextRequest) {
   try {
@@ -47,6 +53,8 @@ export async function GET(req: NextRequest) {
         o.order_number,
         o.status,
         o.payment_status,
+        o.payment_method,
+        o.checkout_option,
         o.subtotal,
         o.shipping_fee,
         o.discount,

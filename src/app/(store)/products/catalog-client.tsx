@@ -336,7 +336,7 @@ export function CatalogClient({
                     <ProductCard
                       name={p.name}
                       image={p.thumbnail_url ?? "/images/placeholder.png"}
-                      price={p.price}
+                      price={p.sale_price ?? p.price}
                       originalPrice={p.sale_price ? p.price : undefined}
                       rating={Math.round(p.avg_rating)}
                       inStock={p.stock > 0}

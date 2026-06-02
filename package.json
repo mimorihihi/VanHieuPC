@@ -10,7 +10,10 @@
     "seed:demo-products": "node --env-file=.env scripts/seed-demo-products.mjs"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.65",
+    "@openrouter/ai-sdk-provider": "^2.9.0",
     "@vercel/analytics": "^2.0.1",
+    "ai": "^6.0.190",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.10.0",
@@ -18,6 +21,7 @@
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
     "formidable": "^3.5.4",
+    "lottie-react": "^2.4.1",
     "lucide-react": "^1.8.0",
     "mysql2": "^3.22.2",
     "next": "16.2.4",
@@ -25,7 +29,8 @@
     "next-themes": "^0.4.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

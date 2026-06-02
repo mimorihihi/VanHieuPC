@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { cookies } from "next/headers"
 import { NextIntlClientProvider } from "next-intl"
+import { ChatbotWidget } from "@/components/chatbot-widget"
 import { defaultLocale, isValidLocale } from "@/i18n/config"
 import './globals.css'
 
@@ -36,6 +37,7 @@ export default async function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
+          <ChatbotWidget />
         </NextIntlClientProvider>
       </body>
     </html>

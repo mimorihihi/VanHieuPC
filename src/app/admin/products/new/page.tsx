@@ -7,6 +7,7 @@ import { ArrowLeft, Save } from "lucide-react"
 import { AdminBtn } from "@/components/ui/button"
 import { FormInput, FormTextarea, FormSelect, FormToggle } from "@/components/ui/form-fields"
 import { ImageUpload } from "@/components/ui/image-upload"
+import { getProductGeneralImageFolder } from "@/lib/cloudinary-product-folders"
 
 interface Category { id: string; name: string }
 interface Brand { id: string; name: string }
@@ -156,7 +157,7 @@ export default function NewProductPage() {
           <h3 className="form-section-title">Media</h3>
           <ImageUpload
             label="Thumbnail"
-            uploadFolder="datn-ecomm/products"
+            uploadFolder={form.slug.trim() ? getProductGeneralImageFolder(form.slug) : "products/drafts/general"}
             value={form.thumbnail_url}
             onChange={(url) => setForm((f) => ({ ...f, thumbnail_url: url }))}
           />

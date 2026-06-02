@@ -4,12 +4,15 @@ import { NextRequest } from "next/server"
 function serializeOrder(o: any) {
   return {
     ...o,
+    payment_method: o.payment_method ?? "PAY_AT_STORE",
+    checkout_option: o.checkout_option ?? null,
     subtotal: o.subtotal?.toString() ?? "0",
     shipping_fee: o.shipping_fee?.toString() ?? "0",
     discount: o.discount?.toString() ?? "0",
     total: o.total?.toString() ?? "0",
   }
 }
+
 
 export async function GET(req: NextRequest) {
   try {

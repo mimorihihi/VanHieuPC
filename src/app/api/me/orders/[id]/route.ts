@@ -7,6 +7,8 @@ type OrderRow = RowDataPacket & {
   order_number: string
   status: string
   payment_status: string
+  payment_method: string
+  checkout_option: string | null
   subtotal: number | string
   shipping_fee: number | string
   discount: number | string
@@ -19,6 +21,7 @@ type OrderRow = RowDataPacket & {
   user_email: string | null
   items?: OrderItemRow[]
 }
+
 
 type OrderItemRow = RowDataPacket & {
   id: string
@@ -55,6 +58,8 @@ function serializeOrder(order: OrderRow) {
     order_number: order.order_number,
     status: order.status,
     payment_status: order.payment_status,
+    payment_method: order.payment_method,
+    checkout_option: order.checkout_option,
     subtotal: order.subtotal?.toString() ?? "0",
     shipping_fee: order.shipping_fee?.toString() ?? "0",
     discount: order.discount?.toString() ?? "0",

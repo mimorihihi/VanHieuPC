@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState, useCallback, FormEvent } from "react"
-import { Plus, Pencil, Trash2, Search } from "lucide-react"
+import { type FormEvent, useCallback, useEffect, useState } from "react"
+import { Pencil, Plus, Search, Trash2 } from "lucide-react"
 import { Modal } from "@/components/ui/modal"
 import { AdminBtn } from "@/components/ui/button"
 import { FormInput, FormToggle } from "@/components/ui/form-fields"
@@ -36,8 +36,8 @@ export default function BrandsPage() {
   const fetchBrands = useCallback(() => {
     setLoading(true)
     fetch(`/api/admin/brands?search=${encodeURIComponent(search)}`)
-      .then((r) => r.json())
-      .then((d) => setBrands(d.brands ?? []))
+      .then((response) => response.json())
+      .then((data) => setBrands(data.brands ?? []))
       .finally(() => setLoading(false))
   }, [search])
 
@@ -45,6 +45,7 @@ export default function BrandsPage() {
     const timer = setTimeout(() => {
       fetchBrands()
     }, 0)
+
     return () => clearTimeout(timer)
   }, [fetchBrands])
 
@@ -54,38 +55,40 @@ export default function BrandsPage() {
     setModal("create")
   }
 
-  const openEdit = (b: Brand) => {
+  const openEdit = (brand: Brand) => {
     setForm({
-      name: b.name ?? "",
-      slug: b.slug ?? "",
-      logo_url: b.logo_url ?? "",
-      is_active: !!b.is_active,
+      name: brand.name ?? "",
+      slug: brand.slug ?? "",
+      logo_url: brand.logo_url ?? "",
+      is_active: !!brand.is_active,
     })
-    setSelected(b)
+    setSelected(brand)
     setModal("edit")
   }
 
-  const save = async (e: FormEvent) => {
-    e.preventDefault()
+  const save = async (event: FormEvent) => {
+    event.preventDefault()
     setSaving(true)
     const url = modal === "edit" ? `/api/admin/brands/${selected?.id}` : "/api/admin/brands"
     const method = modal === "edit" ? "PUT" : "POST"
-    const res = await fetch(url, {
+    const response = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...form, logo_url: form.logo_url || null }),
     })
     setSaving(false)
-    if (res.ok) {
+
+    if (response.ok) {
       setModal(null)
       fetchBrands()
-    } else {
-      const d = await res.json()
-      alert(d.error)
+      return
     }
+
+    const data = await response.json()
+    alert(data.error)
   }
 
-  const del = async () => {
+  const deleteBrand = async () => {
     setSaving(true)
     await fetch(`/api/admin/brands/${selected?.id}`, { method: "DELETE" })
     setSaving(false)
@@ -94,58 +97,73 @@ export default function BrandsPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6 flex items-start justify-between gap-4">
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-[22px] font-bold text-slate-100">Brands</h1>
-          <p className="mt-0.5 text-xs text-zinc-500">{brands.length} total brands</p>
+          <h2 className="text-2xl font-semibold text-zinc-900">Brands</h2>
+          <p className="mt-1 text-sm text-zinc-500">{brands.length} total brands</p>
         </div>
         <AdminBtn onClick={openCreate}>
-          <Plus className="mr-2 h-4 w-4" /> Add Brand
+          <Plus className="mr-2 h-4 w-4" />
+          Add Brand
         </AdminBtn>
       </div>
 
-      <div className="mb-4 max-w-sm">
-        <div className="relative">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+      <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <div className="relative w-full max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
-            className="h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 py-2 pr-3 pl-9 text-sm text-slate-200 outline-none transition-colors placeholder:text-zinc-500 focus:border-indigo-500"
+            id="admin-brands-search"
+            className="h-10 w-full rounded-xl border border-zinc-300 bg-zinc-50 py-2 pl-9 pr-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-400"
             placeholder="Search brands..."
             value={search}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {loading ? (
-          <p className="col-span-full py-10 text-center text-zinc-500">Loading...</p>
+          <p className="col-span-full py-12 text-center text-sm text-zinc-500">Loading...</p>
         ) : brands.length === 0 ? (
-          <p className="col-span-full py-10 text-center text-zinc-500">No brands found</p>
+          <p className="col-span-full py-12 text-center text-sm text-zinc-500">No brands found</p>
         ) : (
-          brands.map((b, i) => (
-            <div key={b.id || i} className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4 transition-colors hover:border-zinc-700">
-              {b.logo_url ? (
-                <img src={b.logo_url} alt={b.name || "Brand"} className="h-12 w-12 rounded-lg bg-zinc-800 object-contain p-1" />
+          brands.map((brand) => (
+            <div key={brand.id} className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-colors hover:bg-zinc-50">
+              {brand.logo_url ? (
+                <img src={brand.logo_url} alt={brand.name || "Brand"} className="h-12 w-12 rounded-xl border border-zinc-200 bg-zinc-50 object-contain p-1" />
               ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-lg font-bold text-white">
-                  {b.name?.[0] || "?"}
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-100 text-lg font-semibold text-zinc-700">
+                  {brand.name?.[0] || "?"}
                 </div>
               )}
 
               <div className="min-w-0 flex-1">
-                <div className="truncate font-semibold text-slate-100">{b.name}</div>
-                <div className="mt-0.5 truncate text-xs text-zinc-500">{b.slug}</div>
+                <p className="truncate font-medium text-zinc-900">{brand.name}</p>
+                <p className="mt-1 truncate text-xs text-zinc-500">{brand.slug}</p>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${b.is_active ? "bg-emerald-400/15 text-emerald-300" : "bg-red-400/15 text-red-300"}`}>
-                  {b.is_active ? "Active" : "Inactive"}
+              <div className="flex items-center gap-2">
+                <span className={brand.is_active ? "inline-flex rounded-full bg-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700" : "inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-500"}>
+                  {brand.is_active ? "Active" : "Inactive"}
                 </span>
-                <button className="rounded-md p-1.5 text-indigo-400 transition-colors hover:bg-indigo-500/15" onClick={() => openEdit(b)}>
+                <button
+                  id={`admin-brand-edit-${brand.id}`}
+                  type="button"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-100 text-zinc-700 transition-colors hover:bg-zinc-200"
+                  onClick={() => openEdit(brand)}
+                >
                   <Pencil className="h-4 w-4" />
                 </button>
-                <button className="rounded-md p-1.5 text-red-400 transition-colors hover:bg-red-500/15" onClick={() => { setSelected(b); setModal("delete") }}>
+                <button
+                  id={`admin-brand-delete-${brand.id}`}
+                  type="button"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-100 text-zinc-700 transition-colors hover:bg-zinc-200"
+                  onClick={() => {
+                    setSelected(brand)
+                    setModal("delete")
+                  }}
+                >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
@@ -155,29 +173,39 @@ export default function BrandsPage() {
       </div>
 
       <Modal open={modal === "create" || modal === "edit"} onClose={() => setModal(null)} title={modal === "edit" ? "Edit Brand" : "New Brand"}>
-        <form onSubmit={save}>
-          <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FormInput label="Name" required value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, name: e.target.value }))} />
-            <FormInput label="Slug" required value={form.slug} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, slug: e.target.value }))} />
+        <form onSubmit={save} className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormInput label="Name" required value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+            <FormInput label="Slug" required value={form.slug} onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))} />
           </div>
-          <div className="mb-4">
-            <ImageUpload label="Logo" uploadFolder="datn-ecomm/brands" value={form.logo_url} onChange={(url) => setForm((f) => ({ ...f, logo_url: url }))} />
+          <div>
+            <ImageUpload label="Logo" uploadFolder="datn-ecomm/brands" value={form.logo_url} onChange={(url) => setForm((current) => ({ ...current, logo_url: url }))} />
           </div>
-          <div className="mb-6">
-            <FormToggle label="Active" checked={!!form.is_active} onChange={(v: boolean) => setForm((f) => ({ ...f, is_active: v }))} />
+          <div>
+            <FormToggle label="Active" checked={!!form.is_active} onChange={(value) => setForm((current) => ({ ...current, is_active: value }))} />
           </div>
           <div className="flex justify-end gap-3">
-            <AdminBtn type="button" variant="secondary" onClick={() => setModal(null)}>Cancel</AdminBtn>
-            <AdminBtn type="submit" loading={saving}>Save</AdminBtn>
+            <AdminBtn type="button" variant="secondary" onClick={() => setModal(null)}>
+              Cancel
+            </AdminBtn>
+            <AdminBtn type="submit" loading={saving}>
+              Save
+            </AdminBtn>
           </div>
         </form>
       </Modal>
 
       <Modal open={modal === "delete"} onClose={() => setModal(null)} title="Delete Brand" size="sm">
-        <p className="mb-6 text-sm text-zinc-400">Delete <strong className="text-slate-100">{selected?.name}</strong>?</p>
+        <p className="mb-6 text-sm text-zinc-600">
+          Delete <strong className="text-zinc-900">{selected?.name}</strong>?
+        </p>
         <div className="flex justify-end gap-3">
-          <AdminBtn variant="secondary" onClick={() => setModal(null)}>Cancel</AdminBtn>
-          <AdminBtn variant="danger" loading={saving} onClick={del}>Delete</AdminBtn>
+          <AdminBtn variant="secondary" onClick={() => setModal(null)}>
+            Cancel
+          </AdminBtn>
+          <AdminBtn variant="danger" loading={saving} onClick={deleteBrand}>
+            Delete
+          </AdminBtn>
         </div>
       </Modal>
     </div>

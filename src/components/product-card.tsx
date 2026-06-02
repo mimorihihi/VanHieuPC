@@ -28,8 +28,8 @@ export function ProductCard({
   }
 
   return (
-    <div className="group flex h-full cursor-pointer flex-col rounded-2xl border border-zinc-200 bg-white p-3 shadow-[0_1px_0_rgba(0,0,0,0.02)] transition-all duration-200 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-lg">
-      <div className="mb-2 flex items-center justify-between">
+    <div className="group flex h-full cursor-pointer flex-col rounded-2xl border border-zinc-200 bg-white p-2.5 shadow-[0_1px_0_rgba(0,0,0,0.02)] transition-all duration-200 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-md">
+      <div className="mb-1.5 flex items-center justify-between">
         {inStock ? (
           <div className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -43,16 +43,18 @@ export function ProductCard({
         )}
       </div>
 
-      <div className="relative mb-3 flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-zinc-50">
+      <div
+        className="relative mb-2 flex aspect-[6/5] items-center justify-center overflow-hidden rounded-xl"
+      >
         <img
-          src={image}
+          src={image.trim() || "/images/placeholder.png"}
           alt={name}
-          className="max-h-full max-w-full object-contain p-3 transition-transform duration-300 group-hover:scale-105"
+          className="max-h-full max-w-full object-contain p-1 transition-transform duration-300 group-hover:scale-105"
         />
       </div>
 
       <div className="flex flex-1 flex-col">
-        <div className="mb-2 flex items-center gap-1.5">
+        <div className="mb-1 flex items-center gap-1.5">
           <div className="flex">
             {[...Array(5)].map((_, i) => (
               <svg
@@ -67,11 +69,11 @@ export function ProductCard({
           <span className="text-[10px] text-zinc-400">Reviews ({reviewCount})</span>
         </div>
 
-        <h4 className="mb-3 line-clamp-2 text-[13px] font-semibold leading-snug text-zinc-800 transition-colors group-hover:text-blue-600">
+        <h4 className="line-clamp-2 text-[13px] font-semibold leading-snug text-zinc-800 transition-colors group-hover:text-blue-600">
           {name}
         </h4>
 
-        <div className="mt-auto">
+        <div className="mt-auto pt-1.5">
           {originalPrice && Number(originalPrice) > Number(price) ? (
             <div className="mb-0.5 text-[11px] text-zinc-400 line-through">{formatPrice(originalPrice)}</div>
           ) : null}

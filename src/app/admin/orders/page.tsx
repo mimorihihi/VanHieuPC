@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Eye } from "lucide-react"
 import { Modal } from "@/components/ui/modal"
 import { AdminBtn } from "@/components/ui/button"
@@ -12,11 +12,26 @@ interface Order {
   status: string
   payment_status: string
   payment_method: string
+  checkout_option: string | null
   total: string
   created_at: string
   user: { name: string; email: string } | null
   items: { product: { name: string; thumbnail_url: string | null }; quantity: number; unit_price: string }[]
 }
+
+function formatPaymentMethod(value: string) {
+  if (value === "PAY_AT_STORE") return "Thanh toán tại cửa hàng"
+  if (value === "VNPAY") return "VNPAY"
+  return value
+}
+
+function formatCheckoutOption(value: string | null) {
+  if (value === "pickup_store") return "Nhận tại cửa hàng · Thanh toán tại quầy"
+  if (value === "pickup_online") return "Nhận tại cửa hàng · Thanh toán online"
+  if (value === "delivery_online") return "Giao tận nơi · Thanh toán online"
+  return "-"
+}
+
 
 const STATUS_OPTS = [
   { value: "PENDING", label: "Pending" },
@@ -33,17 +48,17 @@ const PAYMENT_OPTS = [
 ]
 
 const STATUS_COLOR: Record<string, string> = {
-  PENDING: "bg-amber-400/15 text-amber-300",
-  CONFIRMED: "bg-blue-400/15 text-blue-300",
-  SHIPPING: "bg-violet-400/15 text-violet-300",
-  DELIVERED: "bg-emerald-400/15 text-emerald-300",
-  CANCELLED: "bg-red-400/15 text-red-300",
+  PENDING: "bg-zinc-100 text-zinc-700",
+  CONFIRMED: "bg-zinc-200 text-zinc-700",
+  SHIPPING: "bg-zinc-100 text-zinc-600",
+  DELIVERED: "bg-zinc-200 text-zinc-800",
+  CANCELLED: "bg-zinc-100 text-zinc-500",
 }
 
 const PAY_COLOR: Record<string, string> = {
-  PENDING: "bg-amber-400/15 text-amber-300",
-  PAID: "bg-emerald-400/15 text-emerald-300",
-  FAILED: "bg-red-400/15 text-red-300",
+  PENDING: "bg-zinc-100 text-zinc-700",
+  PAID: "bg-zinc-200 text-zinc-700",
+  FAILED: "bg-zinc-100 text-zinc-500",
 }
 
 export default function OrdersPage() {
@@ -58,28 +73,29 @@ export default function OrdersPage() {
   const [saving, setSaving] = useState(false)
   const limit = 15
 
-  const fetch_ = useCallback(() => {
+  const fetchOrders = useCallback(() => {
     setLoading(true)
     fetch(`/api/admin/orders?page=${page}&limit=${limit}&status=${statusFilter}`)
-      .then((r) => r.json())
-      .then((d) => {
-        setOrders(d.orders ?? [])
-        setTotal(d.total ?? 0)
+      .then((response) => response.json())
+      .then((data) => {
+        setOrders(data.orders ?? [])
+        setTotal(data.total ?? 0)
       })
       .finally(() => setLoading(false))
   }, [page, statusFilter])
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetch_()
+      fetchOrders()
     }, 0)
-    return () => clearTimeout(timer)
-  }, [fetch_])
 
-  const openDetail = (o: Order) => {
-    setSelected(o)
-    setNewStatus(o.status)
-    setNewPayStatus(o.payment_status)
+    return () => clearTimeout(timer)
+  }, [fetchOrders])
+
+  const openDetail = (order: Order) => {
+    setSelected(order)
+    setNewStatus(order.status)
+    setNewPayStatus(order.payment_status)
   }
 
   const updateOrder = async () => {
@@ -92,168 +108,172 @@ export default function OrdersPage() {
     })
     setSaving(false)
     setSelected(null)
-    fetch_()
+    fetchOrders()
   }
 
   const totalPages = Math.ceil(total / limit)
 
   return (
-    <div>
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[22px] font-bold text-slate-100">Orders</h1>
-          <p className="mt-0.5 text-xs text-zinc-500">{total} total orders</p>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold text-zinc-900">Orders</h2>
+        <p className="mt-1 text-sm text-zinc-500">{total} total orders</p>
+      </div>
+
+      <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap gap-2">
+          {["", "PENDING", "CONFIRMED", "SHIPPING", "DELIVERED", "CANCELLED"].map((status) => (
+            <button
+              key={status}
+              id={`admin-orders-filter-${status || "all"}`}
+              type="button"
+              className={statusFilter === status
+                ? "rounded-full border border-zinc-300 bg-zinc-200 px-3.5 py-1.5 text-xs font-medium text-zinc-800 transition-colors"
+                : "rounded-full border border-zinc-200 bg-zinc-50 px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900"}
+              onClick={() => {
+                setStatusFilter(status)
+                setPage(1)
+              }}
+            >
+              {status || "All"}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {["", "PENDING", "CONFIRMED", "SHIPPING", "DELIVERED", "CANCELLED"].map((s) => (
-          <button
-            key={s}
-            className={`rounded-full border px-3.5 py-1.5 text-xs transition-colors ${statusFilter === s ? "border-indigo-400/40 bg-indigo-500/15 text-indigo-300" : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-slate-200"}`}
-            onClick={() => {
-              setStatusFilter(s)
-              setPage(1)
-            }}
-          >
-            {s || "All"}
-          </button>
-        ))}
-      </div>
-
-      <div className="overflow-x-auto rounded-xl border border-zinc-800">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr>
-              {[
-                "Order #",
-                "Customer",
-                "Items",
-                "Total",
-                "Payment",
-                "Status",
-                "Date",
-                "Actions",
-              ].map((head) => (
-                <th
-                  key={head}
-                  className="border-b border-zinc-800 bg-zinc-950 px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-500 uppercase"
-                >
-                  {head}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-zinc-200 text-sm">
+            <thead className="bg-zinc-100">
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-zinc-500">
-                  Loading...
-                </td>
+                {["Order #", "Customer", "Items", "Total", "Payment", "Status", "Date", "Actions"].map((head) => (
+                  <th key={head} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                    {head}
+                  </th>
+                ))}
               </tr>
-            ) : orders.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-zinc-500">
-                  No orders found
-                </td>
-              </tr>
-            ) : (
-              orders.map((o, i) => (
-                <tr key={o.id || i} className="border-b border-zinc-800 last:border-b-0 hover:bg-white/[0.02]">
-                  <td className="px-4 py-3 font-mono text-xs text-slate-300">{o.order_number}</td>
-                  <td className="px-4 py-3">
-                    <div className="font-semibold text-slate-100">{o.user?.name ?? "Guest"}</div>
-                    <div className="mt-0.5 text-xs text-zinc-500">{o.user?.email ?? ""}</div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-200">{o.items?.length ?? 0} items</td>
-                  <td className="px-4 py-3 font-semibold text-slate-100">₫{Number(o.total || 0).toLocaleString()}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${PAY_COLOR[o.payment_status] ?? "bg-zinc-800 text-zinc-400"}`}>
-                      {o.payment_status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[o.status] ?? "bg-zinc-800 text-zinc-400"}`}>
-                      {o.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-zinc-500">
-                    {o.created_at ? new Date(o.created_at).toLocaleDateString("vi-VN") : "-"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      className="rounded-md p-1.5 text-indigo-400 transition-colors hover:bg-indigo-500/15"
-                      onClick={() => openDetail(o)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </button>
+            </thead>
+            <tbody className="divide-y divide-zinc-100 bg-white">
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-12 text-center text-sm text-zinc-500">
+                    Loading...
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : orders.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-12 text-center text-sm text-zinc-500">
+                    No orders found
+                  </td>
+                </tr>
+              ) : (
+                orders.map((order) => (
+                  <tr key={order.id} className="transition-colors hover:bg-zinc-50">
+                    <td className="px-4 py-4 font-mono text-xs text-zinc-600">{order.order_number}</td>
+                    <td className="px-4 py-4">
+                      <p className="font-medium text-zinc-900">{order.user?.name ?? "Guest"}</p>
+                      <p className="mt-1 text-xs text-zinc-500">{order.user?.email ?? ""}</p>
+                    </td>
+                    <td className="px-4 py-4 text-zinc-600">{order.items?.length ?? 0} items</td>
+                    <td className="px-4 py-4 font-semibold text-zinc-900">₫{Number(order.total || 0).toLocaleString()}</td>
+                    <td className="px-4 py-4">
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${PAY_COLOR[order.payment_status] ?? "bg-zinc-100 text-zinc-600"}`}>
+                        {order.payment_status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_COLOR[order.status] ?? "bg-zinc-100 text-zinc-600"}`}>
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-xs text-zinc-500">
+                      {order.created_at ? new Date(order.created_at).toLocaleDateString("vi-VN") : "-"}
+                    </td>
+                    <td className="px-4 py-4">
+                      <button
+                        id={`admin-order-view-${order.id}`}
+                        type="button"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-100 text-zinc-700 transition-colors hover:bg-zinc-200"
+                        onClick={() => openDetail(order)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {totalPages > 1 && (
-        <div className="mt-5 flex items-center justify-center gap-4">
-          <AdminBtn variant="secondary" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+      {totalPages > 1 ? (
+        <div className="flex items-center justify-center gap-4">
+          <AdminBtn variant="secondary" size="sm" disabled={page === 1} onClick={() => setPage((prev) => prev - 1)}>
             Previous
           </AdminBtn>
           <span className="text-sm text-zinc-500">Page {page} of {totalPages}</span>
-          <AdminBtn variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+          <AdminBtn variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage((prev) => prev + 1)}>
             Next
           </AdminBtn>
         </div>
-      )}
+      ) : null}
 
       <Modal open={!!selected} onClose={() => setSelected(null)} title={`Order ${selected?.order_number ?? ""}`} size="lg">
-        {selected && (
-          <div>
-            <div className="mb-5 grid grid-cols-1 gap-3 rounded-lg bg-zinc-950 p-4 md:grid-cols-2">
-              <div className="flex flex-col gap-1">
-                <span className="text-[11px] tracking-wider text-zinc-500 uppercase">Customer</span>
-                <span className="text-sm font-medium text-slate-200">{selected.user?.name ?? "Guest"}</span>
+        {selected ? (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-3 rounded-2xl bg-zinc-50 p-4 md:grid-cols-2">
+              <div className="space-y-1">
+                <span className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">Customer</span>
+                <p className="text-sm font-medium text-zinc-900">{selected.user?.name ?? "Guest"}</p>
               </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-[11px] tracking-wider text-zinc-500 uppercase">Email</span>
-                <span className="text-sm font-medium text-slate-200">{selected.user?.email ?? "-"}</span>
+              <div className="space-y-1">
+                <span className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">Email</span>
+                <p className="text-sm font-medium text-zinc-900">{selected.user?.email ?? "-"}</p>
               </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-[11px] tracking-wider text-zinc-500 uppercase">Payment Method</span>
-                <span className="text-sm font-medium text-slate-200">{selected.payment_method}</span>
+              <div className="space-y-1">
+                <span className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">Checkout Option</span>
+                <p className="text-sm font-medium text-zinc-900">{formatCheckoutOption(selected.checkout_option)}</p>
               </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-[11px] tracking-wider text-zinc-500 uppercase">Total</span>
-                <span className="text-base font-bold text-indigo-300">₫{Number(selected.total || 0).toLocaleString()}</span>
+              <div className="space-y-1">
+                <span className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">Payment Method</span>
+                <p className="text-sm font-medium text-zinc-900">{formatPaymentMethod(selected.payment_method)}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">Total</span>
+                <p className="text-base font-semibold text-zinc-900">₫{Number(selected.total || 0).toLocaleString()}</p>
               </div>
             </div>
 
-            <h4 className="mb-3 text-xs font-semibold tracking-wider text-zinc-500 uppercase">Items</h4>
-            <div className="mb-5 flex flex-col gap-2">
-              {selected.items?.map((item, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-lg bg-zinc-950 px-3 py-2.5">
-                  {item.product?.thumbnail_url ? (
-                    <img src={item.product.thumbnail_url} alt={item.product?.name || "Item"} className="h-10 w-10 rounded-md object-cover" />
-                  ) : (
-                    <div className="h-10 w-10 shrink-0 rounded-md bg-zinc-800" />
-                  )}
-                  <div>
-                    <div className="text-sm font-medium text-slate-100">{item.product?.name}</div>
-                    <div className="mt-0.5 text-xs text-zinc-500">x {item.quantity || 1} - ₫{Number(item.unit_price || 0).toLocaleString()}</div>
+            <div>
+              <h4 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500">Items</h4>
+              <div className="flex flex-col gap-2">
+                {selected.items?.map((item, index) => (
+                  <div key={index} className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-3">
+                    {item.product?.thumbnail_url ? (
+                      <img src={item.product.thumbnail_url} alt={item.product?.name || "Item"} className="h-10 w-10 rounded-lg border border-zinc-200 object-cover" />
+                    ) : (
+                      <div className="h-10 w-10 shrink-0 rounded-lg border border-zinc-200 bg-white" />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium text-zinc-900">{item.product?.name}</p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        x {item.quantity || 1} - ₫{Number(item.unit_price || 0).toLocaleString()}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="rounded-lg bg-zinc-950 p-4">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <FormSelect label="Order Status" options={STATUS_OPTS} value={newStatus} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewStatus(e.target.value)} />
-                <FormSelect label="Payment Status" options={PAYMENT_OPTS} value={newPayStatus} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewPayStatus(e.target.value)} />
+                ))}
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="rounded-2xl bg-zinc-50 p-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormSelect label="Order Status" options={STATUS_OPTS} value={newStatus} onChange={(event) => setNewStatus(event.target.value)} />
+                <FormSelect label="Payment Status" options={PAYMENT_OPTS} value={newPayStatus} onChange={(event) => setNewPayStatus(event.target.value)} />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
               <AdminBtn variant="secondary" onClick={() => setSelected(null)}>
                 Close
               </AdminBtn>
@@ -262,7 +282,7 @@ export default function OrdersPage() {
               </AdminBtn>
             </div>
           </div>
-        )}
+        ) : null}
       </Modal>
     </div>
   )

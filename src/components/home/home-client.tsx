@@ -1,8 +1,9 @@
-﻿"use client"
+"use client"
 
 import { useState } from "react"
 import { CategorySection } from "@/components/home/category-section"
 import { PromoBanner } from "@/components/home/promo-banner"
+import { CLOUDINARY_IMAGES } from "@/lib/cloudinary-images"
 
 interface Product {
   id: string
@@ -23,6 +24,7 @@ interface HomeClientProps {
     desktops: string | null
     monitors: string | null
   }
+  customBuildCategorySlug: string
   desktopCategorySlug: string
   newProducts: Product[]
   customBuildProducts: Product[]
@@ -33,6 +35,7 @@ interface HomeClientProps {
 
 export function HomeClient({
   categoryImages,
+  customBuildCategorySlug,
   desktopCategorySlug,
   newProducts,
   customBuildProducts,
@@ -40,19 +43,9 @@ export function HomeClient({
   desktopProducts,
   monitorProducts,
 }: HomeClientProps) {
-  const fallbackSectionImage = "/images/hero-banner.jpg"
-  const laptopTabs = [
-    "MSI GS Series",
-    "MSI GT Series",
-    "MSI GL Series",
-    "MSI GE Series",
-  ]
-  const desktopTabs = [
-    "MSI Infinite Series",
-    "MSI Trident",
-    "MSI GL Series",
-    "MSI Nightblade",
-  ]
+  const fallbackSectionImage = CLOUDINARY_IMAGES.fallbackSection
+  const laptopTabs = ["MSI", "Razer", "Gigabyte", "ASUS"]
+  const desktopTabs = ["MSI", "Corsair", "Gigabyte", "ASUS"]
 
   const [activeLaptopTab, setActiveLaptopTab] = useState(laptopTabs[0])
   const [activeDesktopTab, setActiveDesktopTab] = useState(desktopTabs[0])
@@ -61,33 +54,20 @@ export function HomeClient({
     id: p.id,
     href: p.slug ? `/products/${p.slug}` : undefined,
     name: p.name,
-    image: p.thumbnail_url ?? "/images/placeholder.png",
+    image: p.thumbnail_url ?? CLOUDINARY_IMAGES.placeholder,
     price: Number(p.sale_price ?? p.price),
     originalPrice: p.sale_price ? Number(p.price) : undefined,
     inStock: p.stock > 0,
     rating: Math.round(Number(p.avg_rating)),
   })
 
-  const filterProductsByTab = (products: Product[], tab: string) => {
-    const matchers = {
-      "MSI GS Series": (name: string) => name.includes("ROG Strix") || name.includes("Titan"),
-      "MSI GT Series": (name: string) => name.includes("XPS") || name.includes("Inspiron"),
-      "MSI GL Series": (name: string) => name.includes("Vivobook"),
-      "MSI GE Series": (name: string) => name.includes("Modern") || name.includes("AORUS"),
-      "MSI Infinite Series": (name: string) => name.includes("Infinite"),
-      "MSI Trident": (name: string) => name.includes("Trident"),
-      "MSI Nightblade": (name: string) => name.includes("Nightblade"),
-    } as const
-
-    const matcher = matchers[tab as keyof typeof matchers]
-    if (!matcher) return products
-
-    const filtered = products.filter((product) => matcher(product.name))
+  const filterProductsByBrand = (products: Product[], brand: string) => {
+    const filtered = products.filter((product) => product.name.startsWith(`${brand} `))
     return filtered.length > 0 ? filtered : products
   }
 
-  const visibleLaptopProducts = filterProductsByTab(laptopProducts, activeLaptopTab)
-  const visibleDesktopProducts = filterProductsByTab(desktopProducts, activeDesktopTab)
+  const visibleLaptopProducts = filterProductsByBrand(laptopProducts, activeLaptopTab)
+  const visibleDesktopProducts = filterProductsByBrand(desktopProducts, activeDesktopTab)
 
   return (
     <>
@@ -97,6 +77,7 @@ export function HomeClient({
         seeAllHref="/products?sort=newest"
         seeAllText="See All New Products"
         products={newProducts.map(mapProduct)}
+        maxItems={5}
         scrollable
         className="bg-white"
       />
@@ -111,10 +92,10 @@ export function HomeClient({
         featuredCard={{
           title: "Custom\nBuilds",
           image: categoryImages.customBuild ?? customBuildProducts[0]?.thumbnail_url ?? fallbackSectionImage,
-          href: "/products?category=custome-build",
+          href: `/products?category=${customBuildCategorySlug}`,
           buttonText: "Explore Builds",
         }}
-        className="bg-zinc-50"
+        className="bg-white"
       />
 
       {/* 4. Laptops section */}
@@ -125,7 +106,7 @@ export function HomeClient({
         products={visibleLaptopProducts.map(mapProduct)}
         maxItems={5}
         featuredCard={{
-          title: "MSI\nLaptops",
+          title: "Gaming\nLaptops",
           image: categoryImages.laptops ?? visibleLaptopProducts[0]?.thumbnail_url ?? fallbackSectionImage,
           href: "/products?category=laptops",
           buttonText: "Shop Laptops",
@@ -141,12 +122,12 @@ export function HomeClient({
         products={visibleDesktopProducts.map(mapProduct)}
         maxItems={5}
         featuredCard={{
-          title: "Desktops",
+          title: "Desktop\nPCs",
           image: categoryImages.desktops ?? visibleDesktopProducts[0]?.thumbnail_url ?? fallbackSectionImage,
           href: `/products?category=${desktopCategorySlug}`,
           buttonText: "Shop Desktops",
         }}
-        className="bg-zinc-50"
+        className="bg-white"
       />
 
       {/* 6. Gaming Monitors section — featured card + grid, no header */}

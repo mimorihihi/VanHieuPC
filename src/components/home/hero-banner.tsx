@@ -43,7 +43,7 @@ export function HeroBanner({ banners }: HeroBannerProps) {
   }
 
   return (
-    <section className="mx-auto max-w-[1600px] px-4 py-3 sm:py-5 lg:py-7">
+    <section className="w-full">
       <div className="relative overflow-hidden">
         <div
           className="flex transition-transform duration-500 ease-in-out"
@@ -52,17 +52,19 @@ export function HeroBanner({ banners }: HeroBannerProps) {
           {slides.map((slide) => (
             <div key={slide.id} className="min-w-full">
               <div className="relative overflow-hidden bg-zinc-100">
-                <img
-                  src={slide.image_url}
-                  alt={slide.title}
-                  className="h-[150px] w-full object-cover object-center sm:h-[190px] md:h-[250px] lg:h-[320px] xl:h-[360px]"
-                  onError={(e) => {
-                    const target = e.currentTarget
-                    target.style.display = "none"
-                    const parent = target.parentElement
-                    if (parent) parent.style.background = "linear-gradient(135deg, #1e293b, #0f172a)"
-                  }}
-                />
+                {slide.image_url.trim() ? (
+                  <img
+                    src={slide.image_url.trim()}
+                    alt={slide.title}
+                    className="h-[180px] w-full bg-black object-contain object-center sm:h-[240px] md:h-[320px] lg:h-[420px] xl:h-[520px]"
+                    onError={(e) => {
+                      const target = e.currentTarget
+                      target.style.display = "none"
+                      const parent = target.parentElement
+                      if (parent) parent.style.background = "linear-gradient(135deg, #1e293b, #0f172a)"
+                    }}
+                  />
+                ) : null}
               </div>
             </div>
           ))}

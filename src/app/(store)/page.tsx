@@ -1,4 +1,4 @@
-﻿import { SiteHeader } from "@/components/site-header"
+import { SiteHeader } from "@/components/site-header"
 import { HeroBanner } from "@/components/home/hero-banner"
 import { SupportFeature } from "@/components/home/support-features"
 import { Testimotion } from "@/components/home/testimonial-section"
@@ -21,12 +21,42 @@ type HomeBrandRow = {
   logo_url: string | null
 }
 
+type HomeBannerRow = {
+  id: string
+  title: string
+  image_url: string
+  link_url?: string | null
+}
+
+type HomeProductRow = {
+  id: string
+  slug?: string
+  name: string
+  price: number | string | { toString?: () => string } | null
+  sale_price?: number | string | { toString?: () => string } | null
+  stock: number
+  thumbnail_url: string | null
+  avg_rating: number | string | { toString?: () => string } | null
+  category_name?: string
+}
+
+function normalizeImageUrl(value: string | null | undefined) {
+  if (typeof value !== "string") return null
+  const trimmedValue = value.trim()
+  return trimmedValue.length > 0 ? trimmedValue : null
+}
+
 async function getBanners() {
   try {
-    const [banners] = await query(
+    const [result] = await query(
       "SELECT id, title, image_url, link_url, sort_order, is_active FROM banners WHERE is_active = true ORDER BY sort_order ASC"
     )
-    return banners
+
+    return (result as HomeBannerRow[]).map((banner) => ({
+      ...banner,
+      image_url: normalizeImageUrl(banner.image_url) ?? "",
+      link_url: banner.link_url ?? null,
+    }))
   } catch (error) {
     console.error("Banner fetch error:", error)
     return []
@@ -35,7 +65,7 @@ async function getBanners() {
 
 async function getProductsByCategory(categorySlug: string, limit = 10) {
   try {
-    const [products] = await query(
+    const [result] = await query(
       `SELECT p.id, p.slug, p.name, p.price, p.sale_price, p.stock, p.thumbnail_url, p.avg_rating, c.name as category_name
        FROM products p
        LEFT JOIN categories c ON p.category_id = c.id
@@ -44,7 +74,7 @@ async function getProductsByCategory(categorySlug: string, limit = 10) {
        LIMIT ?`,
       [categorySlug, limit]
     )
-    return products
+    return result as HomeProductRow[]
   } catch {
     return []
   }
@@ -63,15 +93,16 @@ async function getProductsByCategorySlugs(categorySlugs: string[], limit = 10) {
 
 async function getAllProducts(limit = 10) {
   try {
-    const [products] = await query(
-      `SELECT id, slug, name, price, sale_price, stock, thumbnail_url, avg_rating
-       FROM products
-       WHERE is_active = true
-       ORDER BY created_at DESC
+    const [result] = await query(
+      `SELECT p.id, p.slug, p.name, p.price, p.sale_price, p.stock, p.thumbnail_url, p.avg_rating, c.name as category_name
+       FROM products p
+       LEFT JOIN categories c ON p.category_id = c.id
+       WHERE p.is_active = true
+       ORDER BY p.created_at DESC
        LIMIT ?`,
       [limit]
     )
-    return products
+    return result as HomeProductRow[]
   } catch {
     return []
   }
@@ -79,15 +110,20 @@ async function getAllProducts(limit = 10) {
 
 async function getHomeCategories() {
   try {
-    const [rows] = await query<HomeCategoryRow[]>(
+    const [result] = await query(
       `SELECT slug, name, image_url
        FROM categories
-       WHERE slug IN (?, ?, ?, ?, ?)` ,
-      ["custome-build", "laptops", "desktops", "desktop-pcs", "monitors"]
+       WHERE slug IN (?, ?, ?, ?, ?)`,
+      ["custom-build", "laptops", "desktops", "desktop-pcs", "monitors"]
     )
 
+    const rows = result as HomeCategoryRow[]
+
     return rows.reduce<Record<string, HomeCategoryRow>>((acc, category) => {
-      acc[category.slug] = category
+      acc[category.slug] = {
+        ...category,
+        image_url: normalizeImageUrl(category.image_url),
+      }
       return acc
     }, {})
   } catch {
@@ -97,14 +133,19 @@ async function getHomeCategories() {
 
 async function getHomeBrands() {
   try {
-    const [rows] = await query<HomeBrandRow[]>(
+    const [result] = await query(
       `SELECT id, name, slug, logo_url
        FROM brands
        WHERE is_active = true
        ORDER BY name ASC`
     )
 
-    return rows
+    const rows = result as HomeBrandRow[]
+
+    return rows.map((brand) => ({
+      ...brand,
+      logo_url: normalizeImageUrl(brand.logo_url),
+    }))
   } catch {
     return []
   }
@@ -126,7 +167,7 @@ export default async function Home() {
     getHomeBrands(),
     getHomeCategories(),
     getAllProducts(10),
-    getProductsByCategory("custome-build", 8),
+    getProductsByCategory("custom-build", 8),
     getProductsByCategory("laptops", 8),
     getProductsByCategorySlugs(desktopCategorySlugs, 8),
     getProductsByCategory("monitors", 8)
@@ -140,14 +181,17 @@ export default async function Home() {
     ?? null
 
   // Chuyển Decimal → string để tránh lỗi serialization
-  const serialize = (
-    products: Array<Record<string, unknown> & { price?: { toString?: () => string } | null; sale_price?: { toString?: () => string } | null; avg_rating?: { toString?: () => string } | null }>
-  ) =>
+  const serialize = (products: HomeProductRow[]) =>
     products.map((p) => ({
-      ...p,
-      price: p.price?.toString() ?? "0",
-      sale_price: p.sale_price?.toString() ?? null,
-      avg_rating: p.avg_rating?.toString() ?? "0",
+      id: p.id,
+      slug: p.slug,
+      name: p.name,
+      price: String(p.price ?? 0),
+      sale_price: p.sale_price == null ? null : String(p.sale_price),
+      stock: Number(p.stock ?? 0),
+      thumbnail_url: normalizeImageUrl(p.thumbnail_url),
+      avg_rating: String(p.avg_rating ?? 0),
+      category_name: p.category_name,
     }))
 
   const testimonials = [
@@ -176,11 +220,12 @@ export default async function Home() {
         {/* 2. New Products → Promo → Custom Builds → Laptops → Desktops → Monitors */}
         <HomeClient
           categoryImages={{
-            customBuild: homeCategories["custome-build"]?.image_url ?? null,
+            customBuild: homeCategories["custom-build"]?.image_url ?? null,
             laptops: homeCategories["laptops"]?.image_url ?? null,
             desktops: desktopCategoryImage,
             monitors: homeCategories["monitors"]?.image_url ?? null,
           }}
+          customBuildCategorySlug="custom-build"
           desktopCategorySlug={desktopCategoryResult.slug}
           newProducts={serialize(newProducts)}
           customBuildProducts={serialize(customBuildProducts)}
@@ -188,6 +233,8 @@ export default async function Home() {
           desktopProducts={serialize(desktopProducts)}
           monitorProducts={serialize(monitorProducts)}
         />
+
+
 
         {/* 3. Brand Logos */}
         <BrandLogosStrip brands={brands} />
