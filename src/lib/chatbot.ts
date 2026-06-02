@@ -906,8 +906,11 @@ export async function handleChatbotMessage(message: string, sessionId?: string):
   let result: Omit<ChatbotApiResponse, "sessionId">
 
   const toolResult = preparedRoute ? await executeChatTool(preparedRoute) : null
+  const shouldUseToolResult = Boolean(
+    toolResult && (toolResult.data || (preparedRoute && (preparedRoute.confidence >= 0.75 || preparedRoute.toolName === "checkOrderStatus")))
+  )
 
-  if (toolResult && (toolResult.data || preparedRoute?.confidence >= 0.75 || preparedRoute?.toolName === "checkOrderStatus")) {
+  if (shouldUseToolResult && toolResult) {
     result = {
       reply: toolResult.reply,
       data: toolResult.data,
