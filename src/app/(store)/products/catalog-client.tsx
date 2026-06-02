@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useState, useCallback, useTransition } from "react"
-import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { type ReactNode, useState, useCallback, useTransition } from "react"
+import { useRouter, usePathname } from "next/navigation"
 import { ProductCard } from "@/components/product-card"
 import { SlidersHorizontal, LayoutGrid, List, ChevronLeft, ChevronRight, X, Search, ChevronDown } from "lucide-react"
 
@@ -17,7 +17,16 @@ interface Product {
 interface Category { id: string; name: string; slug: string }
 interface Brand    { id: string; name: string; slug: string }
 interface PriceRange { min: number; max: number }
-interface Filters { category?: string; brand?: string; minPrice?: string; maxPrice?: string; sort?: string; page?: string; search?: string }
+interface Filters {
+  category?: string
+  brand?: string
+  minPrice?: string
+  maxPrice?: string
+  sort?: string
+  page?: number
+  limit?: number
+  search?: string
+}
 
 interface Props {
   initialProducts:  Product[]
@@ -45,7 +54,6 @@ export function CatalogClient({
 }: Props) {
   const router     = useRouter()
   const pathname   = usePathname()
-  const sp         = useSearchParams()
   const [pending, startTransition] = useTransition()
 
   const [products,   setProducts]   = useState(initialProducts)
@@ -66,7 +74,7 @@ export function CatalogClient({
   const [maxPrice, setMaxPrice] = useState(initialFilters.maxPrice  ?? "")
 
   /* fetch from API */
-  const fetchProducts = useCallback(async (params: Filters & { limit?: number; page?: number }) => {
+  const fetchProducts = useCallback(async (params: Filters) => {
     setLoading(true)
     const q = new URLSearchParams()
     Object.entries(params).forEach(([k, v]) => { if (v) q.set(k, String(v)) })
@@ -81,7 +89,7 @@ export function CatalogClient({
     }
   }, [])
 
-  const applyFilters = useCallback((overrides: Partial<Filters & { limit: number; page: number }> = {}) => {
+  const applyFilters = useCallback((overrides: Partial<Filters> = {}) => {
     const next = {
       search, category, brand, sort,
       minPrice, maxPrice,
@@ -422,7 +430,7 @@ export function CatalogClient({
 }
 
 /* ─── Reusable filter section ─── */
-function FilterSection({ title, children, noBorder = false }: { title: string; children: React.ReactNode; noBorder?: boolean }) {
+function FilterSection({ title, children, noBorder = false }: { title: string; children: ReactNode; noBorder?: boolean }) {
   const [open, setOpen] = useState(true)
   return (
     <div className={noBorder ? "" : "border-b border-zinc-100"}>
