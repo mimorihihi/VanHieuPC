@@ -818,7 +818,15 @@ async function routeMessageToTool(message: string): Promise<ToolRoute | null> {
   }
 }
 
-async function generateHybridFallback(message: string) {
+async function generateHybridFallback(message: string): Promise<{
+  reply: string
+  data: {
+    provider: string
+    model: string
+  }
+  source: ChatbotSource
+  hasData: boolean
+} | null> {
   if (!openrouter) return null
 
   try {
