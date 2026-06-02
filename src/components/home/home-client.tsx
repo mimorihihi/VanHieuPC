@@ -50,17 +50,6 @@ export function HomeClient({
   const [activeLaptopTab, setActiveLaptopTab] = useState(laptopTabs[0])
   const [activeDesktopTab, setActiveDesktopTab] = useState(desktopTabs[0])
 
-  const mapProduct = (p: Product) => ({
-    id: p.id,
-    href: p.slug ? `/products/${p.slug}` : undefined,
-    name: p.name,
-    image: p.thumbnail_url ?? CLOUDINARY_IMAGES.placeholder,
-    price: Number(p.sale_price ?? p.price),
-    originalPrice: p.sale_price ? Number(p.price) : undefined,
-    inStock: p.stock > 0,
-    rating: Math.round(Number(p.avg_rating)),
-  })
-
   const filterProductsByBrand = (products: Product[], brand: string) => {
     const filtered = products.filter((product) => product.name.startsWith(`${brand} `))
     return filtered.length > 0 ? filtered : products
@@ -76,7 +65,7 @@ export function HomeClient({
         title="New Products"
         seeAllHref="/products?sort=newest"
         seeAllText="See All New Products"
-        products={newProducts.map(mapProduct)}
+        products={newProducts}
         maxItems={5}
         scrollable
         className="bg-white"
@@ -87,7 +76,7 @@ export function HomeClient({
 
       {/* 3. Custom Builds section — featured card + grid, no header */}
       <CategorySection
-        products={customBuildProducts.map(mapProduct)}
+        products={customBuildProducts}
         maxItems={5}
         featuredCard={{
           title: "Custom\nBuilds",
@@ -103,7 +92,7 @@ export function HomeClient({
         tabs={laptopTabs}
         activeTab={activeLaptopTab}
         onTabChange={setActiveLaptopTab}
-        products={visibleLaptopProducts.map(mapProduct)}
+        products={visibleLaptopProducts}
         maxItems={5}
         featuredCard={{
           title: "Gaming\nLaptops",
@@ -119,7 +108,7 @@ export function HomeClient({
         tabs={desktopTabs}
         activeTab={activeDesktopTab}
         onTabChange={setActiveDesktopTab}
-        products={visibleDesktopProducts.map(mapProduct)}
+        products={visibleDesktopProducts}
         maxItems={5}
         featuredCard={{
           title: "Desktop\nPCs",
@@ -132,7 +121,7 @@ export function HomeClient({
 
       {/* 6. Gaming Monitors section — featured card + grid, no header */}
       <CategorySection
-        products={monitorProducts.map(mapProduct)}
+        products={monitorProducts}
         maxItems={5}
         featuredCard={{
           title: "Gaming\nMonitors",
