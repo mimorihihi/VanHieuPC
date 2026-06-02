@@ -952,8 +952,8 @@ export async function handleChatbotMessage(message: string, sessionId?: string):
 
   const aiResult = shouldUseAiFallback ? await generateHybridFallback(message) : null
   const finalResultBase = aiResult ?? result
-  const finalSource: ChatbotSource = aiResult ? "ai_fallback" : finalResultBase.source
-  const finalToolName = aiResult ? undefined : finalResultBase.toolName
+  const finalSource: ChatbotSource = aiResult ? "ai_fallback" : result.source
+  const finalToolName = aiResult ? undefined : result.toolName
   const finalHasData = Boolean(finalResultBase.data)
   const finalResult: ChatbotApiResponse = {
     sessionId: resolvedSessionId,
