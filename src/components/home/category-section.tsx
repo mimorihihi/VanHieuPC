@@ -201,28 +201,16 @@ export function CategorySection({
                   : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6"
             )}>
               {visibleProducts.map((product) => (
-                product.href ? (
-                  <Link key={product.id} href={product.href} className="block h-full">
-                    <ProductCard
-                      name={product.name}
-                      image={product.image.trim()}
-                      price={product.price}
-                      originalPrice={product.originalPrice}
-                      rating={product.rating}
-                      inStock={product.inStock}
-                    />
-                  </Link>
-                ) : (
+                <Link key={product.id} href={`/products/${product.slug || product.id}`} className="block h-full">
                   <ProductCard
-                    key={product.id}
                     name={product.name}
-                    image={product.image.trim()}
-                    price={product.price}
-                    originalPrice={product.originalPrice}
-                    rating={product.rating}
-                    inStock={product.inStock}
+                    image={product.thumbnail_url?.trim() || "/images/placeholder.png"}
+                    price={product.sale_price ?? product.price}
+                    originalPrice={product.sale_price ? product.price : undefined}
+                    rating={Math.round(Number(product.avg_rating) || 0)}
+                    inStock={product.stock > 0}
                   />
-                )
+                </Link>
               ))}
             </div>
           </div>
