@@ -6,6 +6,8 @@ type OrderRow = RowDataPacket & {
   id: string
   order_number: string
   payment_method: string | null
+  payment_status: string | null
+  total: number | string
 }
 
 export async function GET(req: Request) {
@@ -29,7 +31,7 @@ export async function GET(req: Request) {
   }
 
   const [rows] = await query<OrderRow[]>(
-    `SELECT id, order_number, payment_method
+    `SELECT id, order_number, payment_method, payment_status, total
      FROM orders
      WHERE order_number = ?
      LIMIT 1`,
@@ -45,25 +47,61 @@ export async function GET(req: Request) {
     return Response.redirect(failedUrl, 302)
   }
 
+  if (order.payment_method !== "VNPAY") {
+    const failedUrl = new URL("/payment/failed", url.origin)
+    failedUrl.searchParams.set("order", order.order_number)
+    failedUrl.searchParams.set("reason", "invalid-payment-method")
+    return Response.redirect(failedUrl, 302)
+  }
+
   const success = isVnpaySuccess(
     verification.params.vnp_ResponseCode,
     verification.params.vnp_TransactionStatus
   )
 
+  if (!success) {
+    await execute(
+      `UPDATE orders
+       SET payment_status = 'FAILED',
+           status = 'PENDING'
+       WHERE id = ? AND payment_status <> 'PAID'`,
+      [order.id]
+    )
+
+    const failedUrl = new URL("/payment/failed", url.origin)
+    failedUrl.searchParams.set("order", order.order_number)
+    failedUrl.searchParams.set("code", verification.params.vnp_ResponseCode ?? "")
+    return Response.redirect(failedUrl, 302)
+  }
+
+  const expectedAmount = Math.round(Number(order.total ?? 0) * 100)
+  const returnedAmount = Number(verification.params.vnp_Amount ?? 0)
+
+  if (expectedAmount !== returnedAmount) {
+    const failedUrl = new URL("/payment/failed", url.origin)
+    failedUrl.searchParams.set("order", order.order_number)
+    failedUrl.searchParams.set("reason", "invalid-amount")
+    failedUrl.searchParams.set("code", verification.params.vnp_ResponseCode ?? "")
+    return Response.redirect(failedUrl, 302)
+  }
+
+  if (order.payment_status === "PAID") {
+    const redirectUrl = new URL("/payment/success", url.origin)
+    redirectUrl.searchParams.set("order", order.order_number)
+    redirectUrl.searchParams.set("code", verification.params.vnp_ResponseCode ?? "00")
+    return Response.redirect(redirectUrl, 302)
+  }
+
   await execute(
     `UPDATE orders
-     SET payment_status = ?,
-         status = CASE
-           WHEN ? = 'PAID' THEN 'CONFIRMED'
-           WHEN ? = 'FAILED' THEN 'PENDING'
-           ELSE status
-         END
+     SET payment_status = 'PAID',
+         status = 'CONFIRMED'
      WHERE id = ?`,
-    [success ? "PAID" : "FAILED", success ? "PAID" : "FAILED", success ? "PAID" : "FAILED", order.id]
+    [order.id]
   )
 
-  const redirectUrl = new URL(success ? "/payment/success" : "/payment/failed", url.origin)
+  const redirectUrl = new URL("/payment/success", url.origin)
   redirectUrl.searchParams.set("order", order.order_number)
-  redirectUrl.searchParams.set("code", verification.params.vnp_ResponseCode ?? "")
+  redirectUrl.searchParams.set("code", verification.params.vnp_ResponseCode ?? "00")
   return Response.redirect(redirectUrl, 302)
 }
