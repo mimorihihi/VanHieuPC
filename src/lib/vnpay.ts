@@ -36,6 +36,16 @@ function formatVnpDate(date: Date) {
   ].join("")
 }
 
+function getVietnamNow() {
+  const now = new Date()
+
+  return new Date(
+    now.toLocaleString("en-US", {
+      timeZone: "Asia/Ho_Chi_Minh",
+    })
+  )
+}
+
 function normalizeParamValue(value: string) {
   return encodeURIComponent(value).replace(/%20/g, "+")
 }
@@ -65,7 +75,7 @@ export function buildVnpayPaymentUrl({ amount, ipAddr, orderInfo, txnRef }: Buil
   const tmnCode = getRequiredEnv("VNP_TMN_CODE")
   const returnUrl = getRequiredEnv("VNP_RETURN_URL")
 
-  const now = new Date()
+  const now = getVietnamNow()
   const expireAt = new Date(now.getTime() + 15 * 60 * 1000)
 
   const params: VnpPayParams = {
