@@ -245,6 +245,11 @@ export default function CheckoutPage() {
       }
       window.localStorage.removeItem("checkout_coupon_v1")
 
+      if (typeof data.paymentUrl === "string" && data.paymentUrl.trim()) {
+        window.location.href = data.paymentUrl
+        return
+      }
+
       router.push(`/payment/success?order=${encodeURIComponent(data.order?.order_number ?? "")}`)
     } catch {
       setSubmitError("Không thể tạo đơn hàng. Vui lòng thử lại.")

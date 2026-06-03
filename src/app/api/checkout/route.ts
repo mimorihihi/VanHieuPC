@@ -1,6 +1,7 @@
 import { getConnection, query } from "@/lib/db"
 import { NextRequest } from "next/server"
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise"
+import { buildVnpayPaymentUrl, getVnpayClientIp } from "@/lib/vnpay"
 
 type CheckoutOption = "pickup_store" | "pickup_online" | "delivery_online"
 type PaymentMethod = "PAY_AT_STORE" | "VNPAY"
@@ -102,6 +103,14 @@ function buildOrderNumber() {
   return `ORD${Date.now()}${Math.floor(Math.random() * 1000)}`
 }
 
+function buildPaymentOrderInfo(checkoutOption: CheckoutOption, orderNumber: string) {
+  if (checkoutOption === "pickup_online") {
+    return `Thanh toan don hang nhan tai cua hang ${orderNumber}`
+  }
+
+  return `Thanh toan don hang giao tan noi ${orderNumber}`
+}
+
 export async function POST(req: NextRequest) {
   const connection = await getConnection()
 
@@ -110,6 +119,7 @@ export async function POST(req: NextRequest) {
     const checkoutOption = body.checkout_option ?? "pickup_store"
     const paymentMethod = getPaymentMethod(checkoutOption)
     const shippingFee = checkoutOption === "delivery_online" ? 30000 : 0
+    const clientIp = getVnpayClientIp(req.headers.get("x-forwarded-for"))
     const shippingAddress = {
       email: String(body.shipping_address?.email ?? "").trim(),
       fullName: String(body.shipping_address?.fullName ?? "").trim(),
@@ -335,6 +345,15 @@ export async function POST(req: NextRequest) {
 
     await connection.commit()
 
+    const paymentUrl = paymentMethod === "VNPAY"
+      ? buildVnpayPaymentUrl({
+          amount: total,
+          ipAddr: clientIp,
+          orderInfo: buildPaymentOrderInfo(checkoutOption, orderNumber),
+          txnRef: orderNumber,
+        })
+      : null
+
     return Response.json({
       success: true,
       order: {
@@ -349,6 +368,7 @@ export async function POST(req: NextRequest) {
         discount,
         total,
       },
+      paymentUrl,
     })
   } catch (error) {
     await connection.rollback()
