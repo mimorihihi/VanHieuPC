@@ -4,6 +4,28 @@ import { SiteFooter } from "@/components/site-footer"
 import { SupportFeature } from "@/components/home/support-features"
 import { CatalogClient } from "./catalog-client"
 
+type CatalogProductRow = {
+  id: string
+  name: string
+  slug: string
+  price: string | number | null
+  sale_price: string | number | null
+  stock: number
+  thumbnail_url: string | null
+  avg_rating: string | number | null
+  is_featured: boolean | number
+  category_id: string | null
+  category_name: string | null
+  category_slug: string | null
+  brand_id: string | null
+  brand_name: string | null
+  brand_slug: string | null
+}
+
+type CountRow = { total: string | number }
+type PriceRow = { min_price: string | number | null; max_price: string | number | null }
+type OptionRow = { id: string; name: string; slug: string }
+
 async function getInitialData(searchParams: Record<string, string>) {
   const category = searchParams.category ?? ""
   const brand    = searchParams.brand    ?? ""
@@ -36,7 +58,7 @@ async function getInitialData(searchParams: Record<string, string>) {
   const limitNum = Math.min(60, parseInt(limit))
   const offset   = (pageNum - 1) * limitNum
 
-  const [productsRows, totalRows, catRows, brandRows, priceRows] = await Promise.all([
+  const [productsResult, totalResult, categoriesResult, brandsResult, priceResult] = await Promise.all([
     query(
       `SELECT p.id, p.name, p.slug, p.price, p.sale_price, p.stock,
               p.thumbnail_url, p.avg_rating, p.is_featured,
@@ -63,30 +85,35 @@ async function getInitialData(searchParams: Record<string, string>) {
     query(`SELECT MIN(price) as min_price, MAX(price) as max_price FROM products WHERE is_active = true`),
   ])
 
-  const serialize = (p: any) => ({
+  const serialize = (p: CatalogProductRow) => ({
     id:            p.id,
     name:          p.name,
     slug:          p.slug,
-    price:         p.price?.toString() ?? "0",
-    sale_price:    p.sale_price?.toString() ?? null,
+    price:         String(p.price ?? 0),
+    sale_price:    p.sale_price == null ? null : String(p.sale_price),
     stock:         Number(p.stock),
     thumbnail_url: p.thumbnail_url ?? null,
     avg_rating:    Number(p.avg_rating ?? 0),
     is_featured:   Boolean(p.is_featured),
-    category:      p.category_id ? { id: p.category_id, name: p.category_name, slug: p.category_slug } : null,
-    brand:         p.brand_id    ? { id: p.brand_id,    name: p.brand_name,    slug: p.brand_slug    } : null,
+    category:      p.category_id ? { id: p.category_id, name: p.category_name ?? "", slug: p.category_slug ?? "" } : null,
+    brand:         p.brand_id    ? { id: p.brand_id,    name: p.brand_name ?? "",    slug: p.brand_slug ?? ""    } : null,
   })
 
-  const total = Number((totalRows[0] as any)[0]?.total ?? 0)
-  const priceInfo = (priceRows[0] as any)[0]
+  const productRows = productsResult[0] as CatalogProductRow[]
+  const countRows = totalResult[0] as CountRow[]
+  const categoryRows = categoriesResult[0] as OptionRow[]
+  const brandRows = brandsResult[0] as OptionRow[]
+  const priceRowsData = priceResult[0] as PriceRow[]
+  const total = Number(countRows[0]?.total ?? 0)
+  const priceInfo = priceRowsData[0]
 
   return {
-    products:   (productsRows[0] as any[]).map(serialize),
+    products:   productRows.map(serialize),
     total,
     totalPages: Math.ceil(total / limitNum),
     page:       pageNum,
-    categories: catRows[0] as any[],
-    brands:     brandRows[0] as any[],
+    categories: categoryRows,
+    brands:     brandRows,
     priceRange: { min: Number(priceInfo?.min_price ?? 0), max: Number(priceInfo?.max_price ?? 10000) },
   }
 }
@@ -106,6 +133,7 @@ export default async function ProductsPage({
     <div className="flex flex-col min-h-screen bg-white">
       <SiteHeader />
       <CatalogClient
+        key={JSON.stringify(sp)}
         initialProducts={data.products}
         initialTotal={data.total}
         initialTotalPages={data.totalPages}

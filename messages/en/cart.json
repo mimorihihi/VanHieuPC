@@ -1,0 +1,39 @@
+{
+  "Cart": {
+    "breadcrumbHome": "Home",
+    "title": "Shopping Cart",
+    "columns": {
+      "item": "Item",
+      "price": "Price",
+      "qty": "Qty",
+      "subtotal": "Subtotal"
+    },
+    "loading": "Loading cart...",
+    "empty": "Your cart is empty.",
+    "signInSync": "Sign in",
+    "syncHint": "to sync cart across devices.",
+    "outOfStock": "Out of stock",
+    "continue": "Continue Shopping",
+    "clear": "Clear Shopping Cart",
+    "update": "Update Shopping Cart",
+    "updating": "Updating...",
+    "summary": "Summary",
+    "estimate": "Estimate Shipping and Tax",
+    "estimateHint": "Enter your destination to get a shipping estimate.",
+    "discount": "Apply Discount Code",
+    "discountValue": "Discount",
+    "couponPlaceholder": "Enter coupon code",
+    "couponApply": "Apply",
+    "couponApplying": "Applying...",
+    "couponApplied": "Coupon applied:",
+    "couponRemove": "Remove",
+    "couponRequired": "Enter a coupon code first.",
+    "couponEmptyCart": "Add products before applying a coupon.",
+    "couponFailed": "Unable to apply coupon.",
+    "checkoutBlocked": "Remove out-of-stock items before checkout.",
+    "shipping": "Shipping",
+    "vat": "VAT (10%)",
+    "orderTotal": "Order Total",
+    "checkout": "Proceed to Checkout"
+  }
+}

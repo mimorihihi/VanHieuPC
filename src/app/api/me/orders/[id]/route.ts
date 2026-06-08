@@ -1,3 +1,4 @@
+import { getAuthUser } from "@/lib/auth"
 import { query } from "@/lib/db"
 import { NextRequest } from "next/server"
 import type { RowDataPacket } from "mysql2/promise"
@@ -22,7 +23,6 @@ type OrderRow = RowDataPacket & {
   items?: OrderItemRow[]
 }
 
-
 type OrderItemRow = RowDataPacket & {
   id: string
   order_id: string
@@ -35,6 +35,9 @@ type OrderItemRow = RowDataPacket & {
   subtotal: number | string
   product_name_join: string | null
   product_thumbnail_join: string | null
+  review_id: string | null
+  review_rating: number | null
+  review_comment: string | null
 }
 
 function getErrorMessage(error: unknown) {
@@ -82,28 +85,36 @@ function serializeOrder(order: OrderRow) {
         name: item.product_name_join ?? item.product_name,
         thumbnail_url: item.product_thumbnail_join ?? null,
       },
+      review: item.review_id
+        ? {
+            id: item.review_id,
+            rating: Number(item.review_rating ?? 0),
+            comment: item.review_comment ?? "",
+            status: "APPROVED",
+          }
+        : null,
     })),
   }
 }
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
-    const userId = req.nextUrl.searchParams.get("user_id")?.trim() ?? ""
-    if (!userId) {
-      return Response.json({ error: "user_id is required" }, { status: 400 })
+    const authUser = await getAuthUser()
+    if (!authUser) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { id } = await params
     const [orderRows] = await query<OrderRow[]>(
       `SELECT o.*, u.id as user_id, u.name as user_name, u.email as user_email
        FROM orders o
        LEFT JOIN users u ON u.id = o.user_id
        WHERE o.id = ? AND o.user_id = ?
        LIMIT 1`,
-      [id, userId]
+      [id, authUser.id]
     )
     const order = orderRows[0]
     if (!order) {
@@ -114,12 +125,16 @@ export async function GET(
       `SELECT
         oi.*,
         p.name as product_name_join,
-        p.thumbnail_url as product_thumbnail_join
+        p.thumbnail_url as product_thumbnail_join,
+        r.id as review_id,
+        r.rating as review_rating,
+        r.comment as review_comment
        FROM order_items oi
        LEFT JOIN products p ON p.id = oi.product_id
+       LEFT JOIN reviews r ON r.product_id = oi.product_id AND r.user_id = ?
        WHERE oi.order_id = ?
        ORDER BY oi.id ASC`,
-      [id]
+      [authUser.id, id]
     )
 
     return Response.json({

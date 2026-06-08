@@ -1,0 +1,42 @@
+{
+  "Checkout": {
+    "breadcrumbHome": "Trang chủ",
+    "breadcrumbCart": "Giỏ hàng",
+    "title": "Thanh toán",
+    "shippingTitle": "Thông tin giao hàng",
+    "summaryTitle": "Tóm tắt đơn hàng",
+    "loading": "Đang tải trang thanh toán...",
+    "empty": "Giỏ hàng của bạn đang trống.",
+    "signIn": "Đăng nhập",
+    "emailHint": "Bạn có thể tạo tài khoản sau khi đặt hàng.",
+    "subtotal": "Tạm tính",
+    "shipping": "Vận chuyển",
+    "vat": "VAT (10%)",
+    "discount": "Giảm giá",
+    "couponApplied": "Mã đã áp dụng:",
+    "invalidItems": "Một số sản phẩm không còn hợp lệ. Hãy cập nhật giỏ hàng trước khi tiếp tục.",
+    "total": "Tổng thanh toán",
+    "shippingMethod": "Phương thức nhận hàng và thanh toán",
+    "checkoutMethod": "Lựa chọn nhận hàng và thanh toán",
+    "pickupTitle": "Nhận tại cửa hàng",
+    "pickupHint": "Nhận hàng tại showroom, không mất phí giao hàng.",
+    "onlinePaymentTitle": "Thanh toán online",
+    "onlinePaymentHint": "Thanh toán qua cổng VNPAY sau khi xác nhận đơn hàng.",
+    "next": "Tiếp tục",
+    "itemCount": "{count} sản phẩm trong giỏ",
+    "steps": {
+      "shipping": "Giao hàng",
+      "review": "Xác nhận & Thanh toán"
+    },
+    "fields": {
+      "email": "Email",
+      "fullName": "Họ và tên",
+      "phone": "Số điện thoại",
+      "address": "Địa chỉ cụ thể",
+      "province": "Tỉnh / Thành phố",
+      "district": "Quận / Huyện",
+      "ward": "Phường / Xã",
+      "note": "Ghi chú đơn hàng"
+    }
+  }
+}

@@ -76,7 +76,6 @@ export function AdminLoginForm() {
         return
       }
 
-      window.localStorage.setItem("auth_user", JSON.stringify(data.user))
       router.push("/admin/dashboard")
     } catch {
       setFormError("Cannot connect to server")

@@ -75,23 +75,23 @@ export function CategorySection({
   return (
     <section className={cn("w-full py-8 lg:py-10", className)}>
       <div className="container mx-auto px-4">
-        {!featuredCard && (
+        {title && (
           <div className="mb-5 flex items-center justify-between gap-4 border-b border-zinc-200 pb-3">
             <div className="flex min-w-0 items-center gap-6 overflow-x-auto">
-              {title && (
-                <h2 className="shrink-0 whitespace-nowrap text-xl font-bold tracking-tight text-zinc-900">
-                  {title}
-                </h2>
-              )}
+              <h2 className="shrink-0 whitespace-nowrap text-xl font-bold tracking-tight text-zinc-900">
+                {title}
+              </h2>
             </div>
 
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              <a
-                href={seeAllHref}
-                className="shrink-0 whitespace-nowrap text-[13px] font-semibold text-blue-600 transition-colors hover:text-blue-700"
-              >
-                {seeAllText}
-              </a>
+              {seeAllHref !== "#" && (
+                <a
+                  href={seeAllHref}
+                  className="shrink-0 whitespace-nowrap text-[13px] font-semibold text-blue-600 transition-colors hover:text-blue-700"
+                >
+                  {seeAllText}
+                </a>
+              )}
             </div>
           </div>
         )}
@@ -116,33 +116,36 @@ export function CategorySection({
 
         <div className="flex flex-col gap-4 lg:flex-row lg:gap-5">
           {featuredCard && (
-            <div className="relative min-h-[280px] overflow-hidden rounded-2xl bg-zinc-950 p-6 text-white lg:w-[260px] lg:shrink-0 lg:p-7">
-              <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-black/45 to-black/75" />
-              <div className="absolute inset-0 opacity-25">
-                {featuredCard.image.trim() ? (
-                  <img src={featuredCard.image.trim()} alt={featuredCard.title} className="h-full w-full object-cover" />
-                ) : null}
-              </div>
-              <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/10 to-transparent" />
-              <div className="relative z-10 flex h-full flex-col justify-end">
-                <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.28em] text-white/70">
-                  Featured Collection
+            <div className="rounded-2xl border border-zinc-200 bg-white p-2.5 shadow-[0_1px_0_rgba(0,0,0,0.02)] lg:w-[260px] lg:shrink-0">
+              <div className="relative h-full min-h-[248px] overflow-hidden rounded-[18px] bg-zinc-950 px-5 pb-5 pt-4 text-white">
+                <div className="absolute inset-0 bg-gradient-to-br from-black/15 via-black/45 to-black/75" />
+                <div className="absolute inset-0 opacity-30">
+                  {featuredCard.image.trim() ? (
+                    <img src={featuredCard.image.trim()} alt={featuredCard.title} className="h-full w-full object-cover" />
+                  ) : null}
                 </div>
-                <h3 className="mb-5 whitespace-pre-line text-[28px] font-black uppercase leading-[0.95] tracking-tight">
-                  {featuredCard.title}
-                </h3>
-                <a
-                  href={featuredCard.href}
-                  className="inline-flex w-fit items-center rounded-full border border-white/30 bg-white px-5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-zinc-950 transition-transform transition-colors hover:-translate-y-0.5 hover:bg-zinc-100"
-                >
-                  {featuredCard.buttonText}
-                </a>
+                <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/10 to-transparent" />
+                <div className="relative z-10 flex h-full flex-col justify-end">
+                  <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.26em] text-white/65">
+                    Featured Collection
+                  </div>
+                  <h3 className="mb-4 whitespace-pre-line text-[24px] font-black uppercase leading-[0.95] tracking-tight">
+                    {featuredCard.title}
+                  </h3>
+                  <a
+                    href={featuredCard.href}
+                    className="inline-flex w-fit items-center rounded-full border border-white/25 bg-white px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-950 transition-transform transition-colors hover:-translate-y-0.5 hover:bg-zinc-100"
+                  >
+                    {featuredCard.buttonText}
+                  </a>
+                </div>
               </div>
             </div>
           )}
 
           <div className="relative flex-1">
-            {scrollable && canPage && (
+
+            {((scrollable && canPage) || (!scrollable && canPage)) && (
               <>
                 <button
                   id={`${sectionKey}-page-left`}
@@ -160,45 +163,22 @@ export function CategorySection({
                   onClick={() => setPage((current) => Math.min(current + 1, maxPage))}
                   disabled={!canGoNextPage}
                   aria-label={`Show next ${title ?? featuredCard?.title ?? "products"}`}
-                  className="absolute right-0 top-1/2 z-10 hidden translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/95 text-zinc-400 shadow-sm transition-all duration-200 hover:scale-105 hover:border-zinc-300 hover:text-zinc-700 disabled:pointer-events-none disabled:opacity-35 md:inline-flex h-9 w-9"
+                  className="absolute right-0 top-1/2 z-10 hidden h-9 w-9 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/95 text-zinc-400 shadow-sm transition-all duration-200 hover:scale-105 hover:border-zinc-300 hover:text-zinc-700 disabled:pointer-events-none disabled:opacity-35 md:inline-flex"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </>
             )}
 
-            {!scrollable && canPage && (
-              <div className="mb-4 flex items-center justify-end gap-2">
-                <button
-                  id={`${sectionKey}-page-left`}
-                  type="button"
-                  onClick={() => setPage((current) => Math.max(current - 1, 0))}
-                  disabled={!canGoPrevPage}
-                  aria-label={`Show previous ${title ?? featuredCard?.title ?? "products"}`}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-400 shadow-sm transition-all duration-200 hover:scale-105 hover:border-zinc-300 hover:text-zinc-700 disabled:pointer-events-none disabled:opacity-35"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button
-                  id={`${sectionKey}-page-right`}
-                  type="button"
-                  onClick={() => setPage((current) => Math.min(current + 1, maxPage))}
-                  disabled={!canGoNextPage}
-                  aria-label={`Show next ${title ?? featuredCard?.title ?? "products"}`}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-400 shadow-sm transition-all duration-200 hover:scale-105 hover:border-zinc-300 hover:text-zinc-700 disabled:pointer-events-none disabled:opacity-35"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            )}
+
 
             <div className={cn(
-              "grid gap-4",
+              "grid gap-4 lg:gap-5",
               scrollable
                 ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5"
                 : featuredCard
-                  ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5"
-                  : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6"
+                  ? "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
+                  : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
             )}>
               {visibleProducts.map((product) => (
                 <Link key={product.id} href={`/products/${product.slug || product.id}`} className="block h-full">

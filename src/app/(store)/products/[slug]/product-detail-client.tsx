@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ProductCard } from "@/components/product-card"
 import { cn } from "@/lib/utils"
@@ -53,6 +53,22 @@ type AuthUser = {
   email: string
 }
 
+type ProductReview = {
+  id: string
+  user_id: string
+  user_name: string
+  rating: number
+  comment: string
+  created_at: string
+  isMine: boolean
+}
+
+type ReviewsResponse = {
+  reviews: ProductReview[]
+  reviewCount: number
+  avgRating: number
+}
+
 type GuestCartItem = {
   product_id: string
   variant_id?: string | null
@@ -74,11 +90,15 @@ function isAuthUser(value: unknown): value is AuthUser {
 export function ProductDetailClient({ product }: { product: Product }) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>("About Product")
-  const [selectedImage, setSelectedImage] = useState(0)
+  const [currentIndex, setCurrentIndex] = useState(0)
   const [qty, setQty] = useState(1)
   const [isAdding, setIsAdding] = useState(false)
   const [addMessage, setAddMessage] = useState("")
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
+  const [reviews, setReviews] = useState<ProductReview[]>([])
+  const [reviewCount, setReviewCount] = useState(0)
+  const [reviewAvg, setReviewAvg] = useState(product.avg_rating)
+  const [isLoadingReviews, setIsLoadingReviews] = useState(true)
 
   const availableVariants = useMemo(
     () => product.variants.filter((variant) => variant.is_active),
@@ -147,6 +167,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
   const currentStock = Number(selectedVariant?.stock ?? product.stock ?? 0)
   const variantSelectionRequired = availableVariants.length > 0 && optionKeys.length > 0
   const isVariantSelectionComplete = !variantSelectionRequired || selectedVariant !== null
+  const displayRating = reviewCount > 0 ? reviewAvg : product.avg_rating
 
   const formatPrice = (value: string | number) =>
     Number(value).toLocaleString("vi-VN")
@@ -170,12 +191,39 @@ export function ProductDetailClient({ product }: { product: Product }) {
 
   const displayProductName = selectedVariant ? `${product.name} - ${selectedVariant.name}` : product.name
 
+  const loadReviews = async () => {
+    setIsLoadingReviews(true)
+    try {
+      const response = await fetch(`/api/products/${product.slug}/reviews`)
+      const data = (await response.json()) as Partial<ReviewsResponse> & { error?: string }
+
+      if (!response.ok) {
+        setReviews([])
+        return
+      }
+
+      const nextReviews = data.reviews ?? []
+      setReviews(nextReviews)
+      setReviewCount(Number(data.reviewCount ?? nextReviews.length))
+      setReviewAvg(Number(data.avgRating ?? product.avg_rating))
+    } catch {
+      setReviews([])
+    } finally {
+      setIsLoadingReviews(false)
+    }
+  }
+
+  useEffect(() => {
+    void loadReviews()
+  }, [product.slug])
+
+
   const handleSelectOption = (key: string, value: string) => {
     setSelectedOptions((prev) => ({
       ...prev,
       [key]: value,
     }))
-    setSelectedImage(0)
+    setCurrentIndex(0)
     setAddMessage("")
   }
 
@@ -322,16 +370,25 @@ export function ProductDetailClient({ product }: { product: Product }) {
       <section className="bg-[#eef0f5]">
         <div className="container mx-auto grid grid-cols-1 px-4 lg:grid-cols-2">
           <div className="py-10 lg:pr-10">
-            <div className="mb-5 flex items-center gap-1.5 text-[11px] text-zinc-500">
+            <div className="mb-5 flex flex-wrap items-center gap-1.5 text-[11px] text-zinc-500">
               <Link href="/" className="hover:text-blue-600">
                 Home
               </Link>
+              {product.category ? (
+                <>
+                  <span>•</span>
+                  <Link
+                    href={{ pathname: "/products", query: { category: product.category.slug } }}
+                    className="hover:text-blue-600"
+                  >
+                    {product.category.name}
+                  </Link>
+                </>
+              ) : null}
               <span>•</span>
-              <Link href="/products" className="hover:text-blue-600">
-                Laptops
-              </Link>
-              <span>•</span>
-              <span>{product.brand?.name ?? "Series"}</span>
+              <span className="max-w-[220px] truncate text-zinc-700 sm:max-w-sm">
+                {product.name}
+              </span>
             </div>
 
             <h1 className="mb-3 text-4xl font-semibold tracking-tight text-zinc-900">{product.name}</h1>
@@ -342,12 +399,14 @@ export function ProductDetailClient({ product }: { product: Product }) {
                     key={i}
                     className={cn(
                       "h-4 w-4",
-                      i < Math.round(product.avg_rating) ? "fill-yellow-400 text-yellow-400" : "fill-zinc-300 text-zinc-300",
+                      i < Math.round(displayRating) ? "fill-yellow-400 text-yellow-400" : "fill-zinc-300 text-zinc-300",
                     )}
                   />
                 ))}
               </div>
-              <span className="text-xs text-blue-600">Be the first to review this product</span>
+              <span className="text-xs text-blue-600">
+                {reviewCount > 0 ? `${reviewAvg.toFixed(1)}/5 từ ${reviewCount} đánh giá` : "Chưa có đánh giá"}
+              </span>
             </div>
 
             {activeTab === "Details" && (
@@ -448,19 +507,132 @@ export function ProductDetailClient({ product }: { product: Product }) {
               </button>
             </div>
 
-            <img src={displayedImages[selectedImage]} alt={displayProductName} className="mb-6 h-[360px] w-full max-w-[320px] object-contain" />
-
-            <div className="mt-2 flex items-center gap-1.5">
-              {displayedImages.slice(0, 3).map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedImage(idx)}
-                  className={cn(
-                    "h-2 w-2 rounded-full transition-colors",
-                    selectedImage === idx ? "bg-blue-600" : "bg-zinc-300 hover:bg-zinc-400",
-                  )}
+            <div className="flex w-full flex-col items-center px-3">
+              <div className="mb-3 flex h-[320px] w-full max-w-[520px] items-center justify-center overflow-hidden rounded-3xl bg-white">
+                <img
+                  src={displayedImages[currentIndex]}
+                  alt={displayProductName}
+                  className="h-full w-full scale-110 object-contain p-1 transition-transform duration-300"
                 />
-              ))}
+              </div>
+
+              {displayedImages.length > 1 ? (
+                <div className="w-full max-w-[560px] overflow-x-auto rounded-2xl bg-zinc-50 p-2">
+                  <div className="flex min-w-max gap-1.5">
+                    {displayedImages.map((image, idx) => (
+                      <button
+                        key={`${image}-${idx}`}
+                        type="button"
+                        onClick={() => setCurrentIndex(idx)}
+                        aria-label={`View product image ${idx + 1}`}
+                        className={cn(
+                          "flex h-16 w-20 shrink-0 items-center justify-center rounded-xl border bg-white p-1.5 transition-all hover:border-blue-400",
+                          currentIndex === idx
+                            ? "border-blue-600 ring-2 ring-blue-100"
+                            : "border-zinc-200"
+                        )}
+                      >
+                        <img
+                          src={image}
+                          alt={`${displayProductName} thumbnail ${idx + 1}`}
+                          className="h-full w-full object-contain"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-zinc-100 bg-white">
+        <div className="container mx-auto px-4 py-10">
+          <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Reviews</p>
+              <h2 className="text-2xl font-bold text-zinc-900">Đánh giá & nhận xét sản phẩm</h2>
+              <p className="mt-2 text-sm text-zinc-500">
+                {reviewCount > 0
+                  ? `${reviewCount} khách hàng đã chia sẻ trải nghiệm về sản phẩm này.`
+                  : "Hãy là người đầu tiên đánh giá sản phẩm này."}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+              <div className="flex items-center">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className={cn(
+                      "h-4 w-4",
+                      i < Math.round(displayRating) ? "fill-yellow-400 text-yellow-400" : "fill-zinc-300 text-zinc-300",
+                    )}
+                  />
+                ))}
+              </div>
+              <span className="text-sm font-semibold text-zinc-900">{reviewCount > 0 ? reviewAvg.toFixed(1) : "0.0"}/5</span>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+            <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
+              <h3 className="text-sm font-bold text-zinc-900">Đánh giá sau khi hoàn tất đơn hàng</h3>
+              <p className="mt-2 text-xs leading-5 text-zinc-500">
+                Để đảm bảo đánh giá đến từ khách đã mua hàng, bạn hãy vào Dashboard, mở đơn hàng đã hoàn tất rồi đánh giá từng sản phẩm trong chi tiết đơn.
+              </p>
+
+              <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4 text-xs leading-6 text-zinc-600">
+                <p className="font-semibold text-zinc-900">Flow đánh giá:</p>
+                <p className="mt-2">1. User Dashboard</p>
+                <p>2. Đơn hàng của tôi</p>
+                <p>3. Chi tiết đơn hàng đã hoàn tất</p>
+                <p>4. Đánh giá sản phẩm</p>
+              </div>
+
+              <a
+                href="/dashboard?tab=orders"
+                className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-full bg-blue-600 px-5 text-xs font-semibold text-white transition hover:bg-blue-700"
+              >
+                Vào đơn hàng của tôi
+              </a>
+            </div>
+
+            <div className="space-y-3">
+              {isLoadingReviews ? (
+                <div className="rounded-3xl border border-zinc-200 p-5 text-sm text-zinc-500">Đang tải đánh giá...</div>
+              ) : reviews.length > 0 ? (
+                reviews.map((review) => (
+                  <article key={review.id} className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-bold text-zinc-900">
+                          {review.user_name} {review.isMine ? <span className="text-xs font-medium text-blue-600">(Bạn)</span> : null}
+                        </h3>
+                        <p className="text-xs text-zinc-400">{new Date(review.created_at).toLocaleDateString("vi-VN")}</p>
+                      </div>
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={cn(
+                              "h-4 w-4",
+                              i < review.rating ? "fill-yellow-400 text-yellow-400" : "fill-zinc-300 text-zinc-300",
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="whitespace-pre-line text-sm leading-6 text-zinc-700">
+                      {review.comment || "Khách hàng chưa để lại nhận xét chi tiết."}
+                    </p>
+                  </article>
+                ))
+              ) : (
+                <div className="rounded-3xl border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center text-sm text-zinc-500">
+                  Chưa có nhận xét nào cho sản phẩm này.
+                </div>
+              )}
             </div>
           </div>
         </div>

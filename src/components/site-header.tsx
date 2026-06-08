@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useTranslations } from "next-intl"
-import { Check, Search, Settings, ShoppingCart, UserRound } from "lucide-react"
+import { Check, Menu, Search, Settings, ShoppingCart, UserRound, X } from "lucide-react"
 
 type AuthUser = {
   id: string
@@ -15,6 +15,7 @@ type AuthUser = {
 export function SiteHeader() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [isLocaleMenuOpen, setIsLocaleMenuOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [locale, setLocale] = useState<"en" | "vi">(() => {
     if (typeof document === "undefined") return "vi"
     const localeMatch = document.cookie.match(/(?:^|; )locale=([^;]+)/)
@@ -69,17 +70,25 @@ export function SiteHeader() {
     window.location.reload()
   }
 
+  const navItems = [
+    { label: t("nav.pcGaming"), query: { category: "pc-gaming" } },
+    { label: t("nav.pcWorkstation"), query: { category: "pc-do-hoa-lam-viec" } },
+    { label: t("nav.laptops"), query: { category: "laptops" } },
+    { label: t("nav.monitors"), query: { category: "monitors" } },
+    { label: t("nav.other"), query: {} },
+  ]
+
   return (
     <header className="w-full bg-white sticky top-0 z-50">
       {/* Top utility bar */}
       <div className="border-b border-zinc-100 bg-zinc-50">
-        <div className="container mx-auto px-4 flex items-center justify-between py-1.5 text-[11px] text-zinc-500">
-          <div className="flex items-center gap-4">
+        <div className="container mx-auto flex items-center justify-center px-4 py-1.5 text-[11px] text-zinc-500 sm:justify-between">
+          <div className="hidden items-center gap-4 sm:flex">
             <span>
               Opening Hours: <span className="font-medium text-zinc-800">08:30 - 17:00</span>
             </span>
-            <span className="hidden text-zinc-400 sm:inline">|</span>
-            <span className="hidden sm:inline">
+            <span className="hidden text-zinc-400 md:inline">|</span>
+            <span className="hidden md:inline">
               Duong Z115, Phuong Quyet Thang, Tinh Thai Nguyen -{" "}
               <Link href="/contact" className="font-semibold text-zinc-700 hover:text-blue-600">
                 Contact us
@@ -88,7 +97,7 @@ export function SiteHeader() {
           </div>
           <div className="flex items-center gap-3">
             <span>Call us 0867306789</span>
-            <div className="flex gap-2 ml-2">
+            <div className="ml-2 hidden gap-2 sm:flex">
               <a href="#" className="hover:text-blue-600 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
               </a>
@@ -114,29 +123,22 @@ export function SiteHeader() {
           </Link>
 
           {/* Navigation */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {[
-              t("nav.laptops"),
-              t("nav.desktops"),
-              t("nav.networking"),
-              t("nav.printers"),
-              t("nav.parts"),
-              t("nav.other"),
-            ].map((item) => (
-              <a
-                key={item}
-                href="#"
-                className="text-[13px] font-semibold text-zinc-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md hover:bg-zinc-50"
+          <nav className="hidden items-center gap-1 lg:flex">
+            {navItems.map((item) => (
+              <Link
+                key={`${item.label}-${JSON.stringify(item.query)}`}
+                href={{ pathname: "/products", query: item.query }}
+                className="rounded-md px-3 py-2 text-[13px] font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-blue-600"
               >
-                {item}
-              </a>
+                {item.label}
+              </Link>
             ))}
-            <a
-              href="#"
-              className="text-[13px] font-bold text-blue-600 border border-blue-600 hover:bg-blue-600 hover:text-white px-4 py-1.5 rounded transition-colors ml-2"
+            <Link
+              href={{ pathname: "/products", query: { sort: "newest" } }}
+              className="ml-2 rounded border border-blue-600 px-4 py-1.5 text-[13px] font-bold text-blue-600 transition-colors hover:bg-blue-600 hover:text-white"
             >
               {t("nav.deals")}
-            </a>
+            </Link>
           </nav>
 
           {/* Icons */}
@@ -191,12 +193,39 @@ export function SiteHeader() {
                 </div>
               ) : null}
             </div>
-            {/* Mobile menu */}
-            <button className="lg:hidden p-2" aria-label={t("menu")}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            <button
+              className="rounded-full p-2 text-zinc-700 transition-colors hover:bg-zinc-100 lg:hidden"
+              aria-label={t("menu")}
+              aria-expanded={isMobileMenuOpen}
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+            >
+              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
+        {isMobileMenuOpen ? (
+          <div className="border-t border-zinc-100 bg-white px-4 py-3 shadow-sm lg:hidden">
+            <nav className="mx-auto flex max-w-screen-sm flex-col gap-1">
+              {navItems.map((item) => (
+                <Link
+                  key={`mobile-${item.label}-${JSON.stringify(item.query)}`}
+                  href={{ pathname: "/products", query: item.query }}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="rounded-lg px-3 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-blue-600"
+                >
+                  {item.label}
+                </Link>
+              ))}
+              <Link
+                href={{ pathname: "/products", query: { sort: "newest" } }}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="mt-1 rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-700"
+              >
+                {t("nav.deals")}
+              </Link>
+            </nav>
+          </div>
+        ) : null}
       </div>
     </header>
   )

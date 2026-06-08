@@ -1,0 +1,39 @@
+{
+  "Cart": {
+    "breadcrumbHome": "Trang chủ",
+    "title": "Giỏ hàng",
+    "columns": {
+      "item": "Sản phẩm",
+      "price": "Giá",
+      "qty": "SL",
+      "subtotal": "Tạm tính"
+    },
+    "loading": "Đang tải giỏ hàng...",
+    "empty": "Giỏ hàng của bạn đang trống.",
+    "signInSync": "Đăng nhập",
+    "syncHint": "để đồng bộ giỏ hàng giữa các thiết bị.",
+    "outOfStock": "Hết hàng",
+    "continue": "Tiếp tục mua sắm",
+    "clear": "Xóa toàn bộ giỏ hàng",
+    "update": "Cập nhật giỏ hàng",
+    "updating": "Đang cập nhật...",
+    "summary": "Tổng quan",
+    "estimate": "Ước tính vận chuyển và thuế",
+    "estimateHint": "Nhập địa chỉ nhận hàng để ước tính phí vận chuyển.",
+    "discount": "Áp dụng mã giảm giá",
+    "discountValue": "Giảm giá",
+    "couponPlaceholder": "Nhập mã giảm giá",
+    "couponApply": "Áp dụng",
+    "couponApplying": "Đang áp dụng...",
+    "couponApplied": "Đã áp dụng mã:",
+    "couponRemove": "Bỏ mã",
+    "couponRequired": "Hãy nhập mã giảm giá trước.",
+    "couponEmptyCart": "Hãy thêm sản phẩm trước khi áp dụng mã.",
+    "couponFailed": "Không thể áp dụng mã giảm giá.",
+    "checkoutBlocked": "Hãy xóa sản phẩm hết hàng trước khi thanh toán.",
+    "shipping": "Vận chuyển",
+    "vat": "VAT (10%)",
+    "orderTotal": "Tổng đơn",
+    "checkout": "Thanh toán"
+  }
+}

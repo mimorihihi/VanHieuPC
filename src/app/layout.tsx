@@ -4,6 +4,7 @@ import { cookies } from "next/headers"
 import { NextIntlClientProvider } from "next-intl"
 import { ChatbotWidget } from "@/components/chatbot-widget"
 import { defaultLocale, isValidLocale } from "@/i18n/config"
+import { getMessages } from "@/i18n/messages"
 import './globals.css'
 
 const geistSans = Geist({
@@ -28,9 +29,7 @@ export default async function RootLayout({
   const cookieStore = await cookies()
   const localeCookie = cookieStore.get("locale")?.value ?? defaultLocale
   const locale = isValidLocale(localeCookie) ? localeCookie : defaultLocale
-  const messages = locale === "en"
-    ? (await import("../../messages/en.json")).default
-    : (await import("../../messages/vi.json")).default
+  const messages = await getMessages(locale)
 
   return (
     <html lang={locale}>

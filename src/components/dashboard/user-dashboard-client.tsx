@@ -17,6 +17,7 @@ import {
   Save,
   Trash2,
   UserRound,
+  Star,
 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SupportFeature } from "@/components/home/support-features"
@@ -67,6 +68,12 @@ type OrderDetail = OrderSummary & {
     quantity: number
     subtotal: string
     product?: { name: string; thumbnail_url: string | null }
+    review?: {
+      id: string
+      rating: number
+      comment: string
+      status: string
+    } | null
   }>
 }
 
@@ -135,13 +142,23 @@ function getStatusClass(status: string) {
   return "bg-zinc-100 text-zinc-700 border-zinc-200"
 }
 
-function loadAuthUser() {
+function canReviewOrder(status: string, paymentStatus: string) {
+  const normalizedStatus = status.toUpperCase()
+  const normalizedPayment = paymentStatus.toUpperCase()
+
+  if (["COMPLETED", "DELIVERED"].includes(normalizedStatus)) return true
+  return normalizedStatus === "CONFIRMED" && normalizedPayment === "PAID"
+}
+
+async function loadAuthUser() {
   try {
-    const raw = window.localStorage.getItem("auth_user")
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as AuthUser
-    if (!parsed?.id || !parsed?.email) return null
-    return parsed
+    const response = await fetch("/api/me", { cache: "no-store" })
+    if (!response.ok) {
+      return null
+    }
+
+    const data = (await response.json()) as { user?: AuthUser }
+    return data.user ?? null
   } catch {
     return null
   }
@@ -156,6 +173,8 @@ export function UserDashboardClient() {
   const [savingAddress, setSavingAddress] = useState(false)
   const [removingWishlistId, setRemovingWishlistId] = useState("")
   const [loadingOrderId, setLoadingOrderId] = useState("")
+  const [savingReviewKey, setSavingReviewKey] = useState("")
+  const [reviewForms, setReviewForms] = useState<Record<string, { rating: number; comment: string }>>({})
   const [activeTab, setActiveTab] = useState<DashboardTab>("overview")
   const [error, setError] = useState("")
 
@@ -190,7 +209,6 @@ export function UserDashboardClient() {
 
   const syncUser = useCallback((nextUser: AuthUser) => {
     setUser(nextUser)
-    window.localStorage.setItem("auth_user", JSON.stringify(nextUser))
   }, [])
 
   const loadDashboard = useCallback(async (userId: string) => {
@@ -239,13 +257,13 @@ export function UserDashboardClient() {
   }, [syncUser])
 
   useEffect(() => {
-    const auth = loadAuthUser()
-    if (!auth) {
-      router.replace("/login")
-      return
-    }
-
     void (async () => {
+      const auth = await loadAuthUser()
+      if (!auth) {
+        router.replace("/login")
+        return
+      }
+
       setUser(auth)
       setProfileForm({
         name: auth.name ?? "",
@@ -260,8 +278,13 @@ export function UserDashboardClient() {
 
 
   const handleLogout = () => {
-    window.localStorage.removeItem("auth_user")
-    router.push("/login")
+    void (async () => {
+      try {
+        await fetch("/api/auth/logout", { method: "POST" })
+      } finally {
+        router.push("/login")
+      }
+    })()
   }
 
   const handleProfileSave = async () => {
@@ -274,7 +297,6 @@ export function UserDashboardClient() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: user.id,
           name: profileForm.name,
           phone: profileForm.phone || null,
           avatar_url: profileForm.avatar_url || null,
@@ -306,9 +328,62 @@ export function UserDashboardClient() {
         setError(data.error ?? "Unable to load order.")
         return
       }
-      setSelectedOrder(data.order ?? null)
+      const order = data.order ?? null
+      setSelectedOrder(order)
+      if (order?.items) {
+        const nextForms: Record<string, { rating: number; comment: string }> = {}
+        order.items.forEach((item: OrderDetail["items"][number]) => {
+          nextForms[item.product_id] = {
+            rating: item.review?.rating || 5,
+            comment: item.review?.comment || "",
+          }
+        })
+        setReviewForms(nextForms)
+      }
     } finally {
       setLoadingOrderId("")
+    }
+  }
+
+  const handleReviewFormChange = (
+    productId: string,
+    field: "rating" | "comment",
+    value: number | string
+  ) => {
+    setReviewForms((prev) => ({
+      ...prev,
+      [productId]: {
+        rating: field === "rating" ? Number(value) : prev[productId]?.rating || 5,
+        comment: field === "comment" ? String(value) : prev[productId]?.comment || "",
+      },
+    }))
+  }
+
+  const handleSubmitOrderReview = async (productId: string) => {
+    if (!selectedOrder) return
+    const form = reviewForms[productId] ?? { rating: 5, comment: "" }
+    const key = `${selectedOrder.id}-${productId}`
+    setSavingReviewKey(key)
+    setError("")
+
+    try {
+      const response = await fetch(`/api/me/orders/${selectedOrder.id}/reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_id: productId,
+          rating: form.rating,
+          comment: form.comment,
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        setError(data.error ?? "Unable to save review.")
+        return
+      }
+      await handleOpenOrder(selectedOrder.id)
+    } finally {
+      setSavingReviewKey("")
     }
   }
 
@@ -608,23 +683,85 @@ export function UserDashboardClient() {
                           <h3 className="text-sm font-semibold text-zinc-900">Order Details</h3>
                           <span className="text-xs text-zinc-500">{selectedOrder.order_number}</span>
                         </div>
-                        <div className="mt-4 space-y-3">
-                          {selectedOrder.items.map((item) => (
-                            <div key={item.id} className="flex gap-3 border-b border-zinc-100 pb-3 last:border-b-0 last:pb-0">
-                              <img
-                                src={item.product?.thumbnail_url ?? "/images/placeholder.png"}
-                                alt={item.product?.name ?? item.product_name}
-                                className="h-14 w-14 rounded border border-zinc-200 object-cover"
-                              />
-                              <div className="min-w-0 flex-1">
-                                <div className="text-sm font-medium text-zinc-900">{item.product_name}</div>
-                                <div className="mt-1 text-xs text-zinc-500">
-                                  Qty {item.quantity} · {formatMoney(item.unit_price)} đ
+                          <div className="mt-4 space-y-4">
+                            {selectedOrder.items.map((item) => {
+                              const reviewEnabled = canReviewOrder(selectedOrder.status, selectedOrder.payment_status)
+                              const form = reviewForms[item.product_id] ?? {
+                                rating: item.review?.rating || 5,
+                                comment: item.review?.comment || "",
+                              }
+                              const savingKey = `${selectedOrder.id}-${item.product_id}`
+
+                              return (
+                                <div key={item.id} className="border-b border-zinc-100 pb-4 last:border-b-0 last:pb-0">
+                                  <div className="flex gap-3">
+                                    <img
+                                      src={item.product?.thumbnail_url ?? "/images/placeholder.png"}
+                                      alt={item.product?.name ?? item.product_name}
+                                      className="h-14 w-14 rounded border border-zinc-200 object-cover"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                      <div className="text-sm font-medium text-zinc-900">{item.product_name}</div>
+                                      <div className="mt-1 text-xs text-zinc-500">
+                                        Qty {item.quantity} · {formatMoney(item.unit_price)} đ
+                                      </div>
+                                      {item.review ? (
+                                        <div className="mt-1 text-[11px] font-semibold text-emerald-700">
+                                          Đã đánh giá · {item.review.status}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  </div>
+
+                                  {reviewEnabled ? (
+                                    <div className="mt-3 rounded border border-zinc-200 bg-zinc-50 p-3">
+                                      <div className="mb-2 flex items-center justify-between gap-3">
+                                        <span className="text-xs font-semibold text-zinc-700">
+                                          {item.review ? "Cập nhật đánh giá" : "Đánh giá sản phẩm"}
+                                        </span>
+                                        <div className="flex items-center gap-1">
+                                          {[1, 2, 3, 4, 5].map((value) => (
+                                            <button
+                                              key={value}
+                                              type="button"
+                                              onClick={() => handleReviewFormChange(item.product_id, "rating", value)}
+                                              className="rounded-full p-0.5 hover:bg-white"
+                                              aria-label={`Chọn ${value} sao`}
+                                            >
+                                              <Star
+                                                className={`h-4 w-4 ${
+                                                  value <= form.rating ? "fill-yellow-400 text-yellow-400" : "fill-zinc-300 text-zinc-300"
+                                                }`}
+                                              />
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                      <textarea
+                                        value={form.comment}
+                                        onChange={(event) => handleReviewFormChange(item.product_id, "comment", event.target.value)}
+                                        rows={3}
+                                        placeholder="Nhập nhận xét của bạn..."
+                                        className="w-full resize-none rounded border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-blue-600"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleSubmitOrderReview(item.product_id)}
+                                        disabled={savingReviewKey === savingKey}
+                                        className="mt-2 inline-flex h-9 items-center rounded-full bg-blue-600 px-4 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                      >
+                                        {savingReviewKey === savingKey ? "Đang lưu..." : item.review ? "Cập nhật đánh giá" : "Gửi đánh giá"}
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <p className="mt-2 text-xs text-zinc-500">
+                                      Bạn có thể đánh giá sau khi đơn hàng hoàn tất.
+                                    </p>
+                                  )}
                                 </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                              )
+                            })}
+                          </div>
                       </div>
                     ) : null}
                   </div>

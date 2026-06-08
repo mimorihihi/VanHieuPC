@@ -1,4 +1,3 @@
-import React from "react"
 
 interface ProductCardProps {
   name: string
@@ -28,15 +27,15 @@ export function ProductCard({
   }
 
   return (
-    <div className="group flex h-full cursor-pointer flex-col rounded-2xl border border-zinc-200 bg-white p-2.5 shadow-[0_1px_0_rgba(0,0,0,0.02)] transition-all duration-200 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-md">
-      <div className="mb-1.5 flex items-center justify-between">
+    <div className="group flex h-full min-h-[300px] cursor-pointer flex-col rounded-2xl border border-zinc-200 bg-white p-3 shadow-[0_1px_0_rgba(0,0,0,0.02)] transition-all duration-200 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-md">
+      <div className="mb-2 flex items-center justify-between">
         {inStock ? (
-          <div className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700">
+          <div className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             In stock
           </div>
         ) : (
-          <div className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-600">
+          <div className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-semibold text-red-600">
             <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
             Check availability
           </div>
@@ -44,17 +43,17 @@ export function ProductCard({
       </div>
 
       <div
-        className="relative mb-2 flex aspect-[6/5] items-center justify-center overflow-hidden rounded-xl"
+        className="relative mb-3 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl bg-zinc-50"
       >
         <img
           src={image.trim() || "/images/placeholder.png"}
           alt={name}
-          className="max-h-full max-w-full object-contain p-1 transition-transform duration-300 group-hover:scale-105"
+          className="max-h-full max-w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
         />
       </div>
 
       <div className="flex flex-1 flex-col">
-        <div className="mb-1 flex items-center gap-1.5">
+        <div className="mb-1.5 flex items-center gap-1.5">
           <div className="flex">
             {[...Array(5)].map((_, i) => (
               <svg
@@ -69,15 +68,15 @@ export function ProductCard({
           <span className="text-[10px] text-zinc-400">Reviews ({reviewCount})</span>
         </div>
 
-        <h4 className="line-clamp-2 text-[13px] font-semibold leading-snug text-zinc-800 transition-colors group-hover:text-blue-600">
+        <h4 className="line-clamp-2 text-sm font-semibold leading-snug text-zinc-800 transition-colors group-hover:text-blue-600">
           {name}
         </h4>
 
-        <div className="mt-auto pt-1.5">
+        <div className="mt-auto pt-2">
           {originalPrice && Number(originalPrice) > Number(price) ? (
-            <div className="mb-0.5 text-[11px] text-zinc-400 line-through">{formatPrice(originalPrice)}</div>
+            <div className="mb-0.5 text-xs text-zinc-400 line-through">{formatPrice(originalPrice)}</div>
           ) : null}
-          <div className="text-base font-bold tracking-tight text-zinc-950">{formatPrice(price)}</div>
+          <div className="text-lg font-bold tracking-tight text-zinc-950">{formatPrice(price)}</div>
         </div>
       </div>
     </div>

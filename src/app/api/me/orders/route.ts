@@ -1,5 +1,5 @@
+import { getAuthUser } from "@/lib/auth"
 import { query } from "@/lib/db"
-import { NextRequest } from "next/server"
 import type { RowDataPacket } from "mysql2/promise"
 
 type OrderRow = RowDataPacket & {
@@ -16,7 +16,6 @@ type OrderRow = RowDataPacket & {
   created_at: string
   item_count: number | string
 }
-
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Failed"
@@ -39,12 +38,11 @@ function serializeOrder(order: OrderRow) {
   }
 }
 
-
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const userId = req.nextUrl.searchParams.get("user_id")?.trim() ?? ""
-    if (!userId) {
-      return Response.json({ error: "user_id is required" }, { status: 400 })
+    const authUser = await getAuthUser()
+    if (!authUser) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const [rows] = await query<OrderRow[]>(
@@ -66,7 +64,7 @@ export async function GET(req: NextRequest) {
        WHERE o.user_id = ?
        GROUP BY o.id
        ORDER BY o.created_at DESC`,
-      [userId]
+      [authUser.id]
     )
 
     return Response.json({ orders: rows.map(serializeOrder) })

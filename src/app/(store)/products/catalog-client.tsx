@@ -2,6 +2,7 @@
 
 import { type ReactNode, useState, useCallback, useTransition } from "react"
 import { useRouter, usePathname } from "next/navigation"
+import Link from "next/link"
 import { ProductCard } from "@/components/product-card"
 import { SlidersHorizontal, LayoutGrid, List, ChevronLeft, ChevronRight, X, Search, ChevronDown } from "lucide-react"
 
@@ -54,7 +55,7 @@ export function CatalogClient({
 }: Props) {
   const router     = useRouter()
   const pathname   = usePathname()
-  const [pending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
 
   const [products,   setProducts]   = useState(initialProducts)
   const [total,      setTotal]      = useState(initialTotal)
@@ -138,7 +139,7 @@ export function CatalogClient({
       {/* Breadcrumb */}
       <div className="border-b border-zinc-200 bg-zinc-50">
         <div className="container mx-auto px-4 py-2 text-xs text-zinc-500 flex items-center gap-1">
-          <a href="/" className="hover:text-blue-600">Home</a>
+          <Link href="/" className="hover:text-blue-600">Home</Link>
           <ChevronRight className="h-3 w-3" />
           <span className="text-zinc-800 font-medium">Products</span>
           {category && <>
@@ -150,14 +151,22 @@ export function CatalogClient({
 
       <div className="container mx-auto px-4 py-6">
         <div className="flex gap-6">
+          {sidebarOpen ? (
+            <button
+              type="button"
+              aria-label="Close filters"
+              className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+          ) : null}
 
           {/* ── LEFT SIDEBAR ── */}
-          <aside className={`w-64 flex-shrink-0 ${sidebarOpen ? "block" : "hidden"} lg:block`}>
+          <aside className={`fixed inset-y-0 left-0 z-50 w-[86vw] max-w-xs overflow-y-auto bg-white p-4 shadow-2xl transition-transform duration-300 lg:static lg:z-auto lg:block lg:w-64 lg:max-w-none lg:translate-x-0 lg:overflow-visible lg:p-0 lg:shadow-none ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
 
             {/* Back */}
-            <a href="/" className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-blue-600 mb-4 transition-colors">
+            <Link href="/" className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-blue-600 mb-4 transition-colors">
               <ChevronLeft className="h-4 w-4" /> Back
-            </a>
+            </Link>
 
             {/* Filter box */}
             <div className="border border-zinc-200 rounded mb-4">
@@ -165,7 +174,17 @@ export function CatalogClient({
                 <span className="text-sm font-bold text-zinc-800 flex items-center gap-1.5">
                   <SlidersHorizontal className="h-4 w-4 text-zinc-500" /> Filters
                 </span>
-                <button onClick={clearAll} className="text-[11px] text-blue-600 hover:underline font-medium">Clear Filter</button>
+                <div className="flex items-center gap-2">
+                  <button onClick={clearAll} className="text-[11px] text-blue-600 hover:underline font-medium">Clear Filter</button>
+                  <button
+                    type="button"
+                    onClick={() => setSidebarOpen(false)}
+                    className="rounded-full p-1 text-zinc-500 hover:bg-zinc-100 lg:hidden"
+                    aria-label="Close filters"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Search */}
@@ -284,8 +303,8 @@ export function CatalogClient({
             )}
 
             {/* Sort + limit + view toggle bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-5 pb-4 border-b border-zinc-100">
-              <div className="flex items-center gap-3">
+            <div className="mb-5 flex flex-col gap-3 border-b border-zinc-100 pb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 {/* Sort */}
                 <div className="relative">
                   <label className="text-xs text-zinc-500 mr-1">Sort By:</label>
@@ -357,8 +376,8 @@ export function CatalogClient({
               <div className="flex flex-col gap-3">
                 {products.map(p => (
                   <a key={p.id} href={`/products/${p.slug || p.id}`}
-                    className="flex gap-4 border border-zinc-100 rounded p-4 hover:shadow-md transition-shadow group">
-                    <div className="w-24 h-24 flex-shrink-0 bg-zinc-50 rounded flex items-center justify-center overflow-hidden">
+                    className="flex flex-col gap-3 rounded border border-zinc-100 p-3 transition-shadow hover:shadow-md group sm:flex-row sm:gap-4 sm:p-4">
+                    <div className="flex h-36 w-full flex-shrink-0 items-center justify-center overflow-hidden rounded bg-zinc-50 sm:h-24 sm:w-24">
                       <img src={p.thumbnail_url ?? "/images/placeholder.png"} alt={p.name}
                         className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform" />
                     </div>
@@ -378,7 +397,7 @@ export function CatalogClient({
                         {p.sale_price && <span className="text-xs text-zinc-400 line-through">${fmt(p.price)}</span>}
                       </div>
                     </div>
-                    <div className="flex flex-col items-end justify-between flex-shrink-0">
+                    <div className="flex flex-row items-center justify-between gap-2 sm:flex-col sm:items-end">
                       <span className={`text-[11px] font-semibold ${p.stock > 0 ? "text-green-600" : "text-red-500"}`}>
                         {p.stock > 0 ? "In Stock" : "Out of Stock"}
                       </span>

@@ -1,10 +1,28 @@
+import { createSession, setSessionCookie } from "@/lib/auth"
 import { query } from "@/lib/db"
 import { verifyPassword } from "@/lib/password"
 import { NextRequest } from "next/server"
+import type { RowDataPacket } from "mysql2/promise"
 
 type LoginBody = {
   email?: string
   password?: string
+}
+
+type LoginUserRow = RowDataPacket & {
+  id: string
+  name: string
+  email: string
+  role: string
+  phone: string | null
+  avatar_url: string | null
+  is_active: number | boolean
+  created_at: string
+  password_hash: string
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Failed"
 }
 
 export async function POST(req: NextRequest) {
@@ -20,7 +38,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const [rows] = await query(
+    const [rows] = await query<LoginUserRow[]>(
       `SELECT id, name, email, role, phone, avatar_url, is_active, created_at, password_hash
        FROM users
        WHERE email = ?
@@ -28,7 +46,7 @@ export async function POST(req: NextRequest) {
       [email]
     )
 
-    const user = rows[0] as any
+    const user = rows[0]
     if (!user) {
       return Response.json({ error: "Invalid credentials" }, { status: 401 })
     }
@@ -42,6 +60,9 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
+    const { sessionToken, expiresAt } = await createSession(user.id)
+    await setSessionCookie(sessionToken, expiresAt)
+
     return Response.json({
       success: true,
       user: {
@@ -51,11 +72,11 @@ export async function POST(req: NextRequest) {
         role: user.role,
         phone: user.phone,
         avatar_url: user.avatar_url,
-        is_active: user.is_active,
+        is_active: Boolean(user.is_active),
         created_at: user.created_at,
       },
     })
-  } catch (error: any) {
-    return Response.json({ error: error.message ?? "Failed" }, { status: 500 })
+  } catch (error: unknown) {
+    return Response.json({ error: getErrorMessage(error) }, { status: 500 })
   }
 }

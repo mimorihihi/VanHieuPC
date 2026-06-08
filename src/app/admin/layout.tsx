@@ -50,34 +50,61 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const isLoginPage = pathname === "/admin/login"
 
   useEffect(() => {
-    if (typeof window === "undefined") return
+    let cancelled = false
 
-    const rawUser = window.localStorage.getItem("auth_user")
-    const parsedUser = rawUser ? (JSON.parse(rawUser) as StoredUser) : null
+    async function checkAdminSession() {
+      try {
+        const response = await fetch("/api/me", { cache: "no-store" })
+        const data = response.ok ? await response.json() : null
+        const user = data?.user as StoredUser | undefined
 
-    if (isLoginPage) {
-      if (parsedUser?.role === "ADMIN") {
-        router.replace("/admin/dashboard")
-        return
+        if (cancelled) return
+
+        if (isLoginPage) {
+          if (user?.role === "ADMIN") {
+            router.replace("/admin/dashboard")
+            return
+          }
+
+          if (user) {
+            router.replace("/dashboard")
+            return
+          }
+
+          setAuthChecked(true)
+          return
+        }
+
+        if (!user || user.role !== "ADMIN") {
+          router.replace("/admin/login")
+          return
+        }
+
+        setCurrentUser(user)
+        setAuthChecked(true)
+      } catch {
+        if (!cancelled) {
+          if (isLoginPage) {
+            setAuthChecked(true)
+          } else {
+            router.replace("/admin/login")
+          }
+        }
       }
-      setAuthChecked(true)
-      return
     }
 
-    if (!parsedUser || parsedUser.role !== "ADMIN") {
-      router.replace("/admin/login")
-      return
-    }
+    checkAdminSession()
 
-    setCurrentUser(parsedUser)
-    setAuthChecked(true)
+    return () => {
+      cancelled = true
+    }
   }, [isLoginPage, router])
 
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("auth_user")
-    }
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => null)
+    setCurrentUser(null)
     router.push("/admin/login")
+    router.refresh()
   }
 
   if (!authChecked) {

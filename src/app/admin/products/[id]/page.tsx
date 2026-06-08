@@ -7,7 +7,7 @@ import { ArrowLeft, Save } from "lucide-react"
 import { AdminBtn } from "@/components/ui/button"
 import { FormInput, FormTextarea, FormSelect, FormToggle } from "@/components/ui/form-fields"
 import { ImageUpload } from "@/components/ui/image-upload"
-import { getProductGeneralImageFolder } from "@/lib/cloudinary-product-folders"
+import { getProductDraftGeneralImageFolder, getProductGeneralImageFolder } from "@/lib/cloudinary-product-folders"
 
 interface Category { id: string; name: string }
 interface Brand { id: string; name: string }
@@ -208,94 +208,94 @@ export default function EditProductPage() {
     }
   }
 
-  if (loading) return <div className="load-msg">Loading product...</div>
+  if (loading) return <div className="py-10 text-center text-zinc-500">Loading product...</div>
 
   return (
     <div>
-      <div className="page-header">
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div className="mb-7 flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
           <Link href="/admin/products">
-            <AdminBtn variant="ghost" size="sm"><ArrowLeft size={16} /></AdminBtn>
+            <AdminBtn variant="ghost" size="sm"><ArrowLeft className="h-4 w-4" /></AdminBtn>
           </Link>
           <div>
-            <h1 className="page-title">Edit Product</h1>
-            <p className="page-sub">{form.name}</p>
+            <h1 className="text-[22px] font-bold text-zinc-900">Edit Product</h1>
+            <p className="mt-0.5 text-[13px] text-zinc-500">{form.name}</p>
           </div>
         </div>
         <AdminBtn type="submit" form="edit-product-form" loading={saving}>
-          <Save size={16} /> Save Changes
+          <Save className="h-4 w-4" /> Save Changes
         </AdminBtn>
       </div>
 
-      {error && <div className="error-banner">{error}</div>}
+      {error && <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
       <form id="edit-product-form" onSubmit={handleSubmit}>
-        <div className="form-section">
-          <h3 className="form-section-title">Basic Information</h3>
-          <div className="form-grid form-grid-2">
+        <div className="mb-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <h3 className="mb-5 border-b border-zinc-200 pb-3 text-[15px] font-semibold text-zinc-900">Basic Information</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
             <FormInput label="Product Name" required value={form.name ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, name: e.target.value }))} />
             <FormInput label="Slug" required value={form.slug ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, slug: e.target.value }))} />
           </div>
-          <div style={{ marginTop: 16 }}>
+          <div className="mt-4">
             <FormTextarea label="Short Description" value={form.short_description ?? ""} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm((f) => ({ ...f, short_description: e.target.value }))} />
           </div>
-          <div style={{ marginTop: 16 }}>
+          <div className="mt-4">
             <FormTextarea label="Description" value={form.description ?? ""} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm((f) => ({ ...f, description: e.target.value }))} />
           </div>
         </div>
 
-        <div className="form-section">
-          <h3 className="form-section-title">Pricing & Stock</h3>
-          <div className="form-grid form-grid-3">
+        <div className="mb-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <h3 className="mb-5 border-b border-zinc-200 pb-3 text-[15px] font-semibold text-zinc-900">Pricing & Stock</h3>
+          <div className="grid gap-4 sm:grid-cols-3">
             <FormInput label="Price (?)" required type="number" min="0" value={form.price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, price: e.target.value }))} />
             <FormInput label="Sale Price (?)" type="number" min="0" value={form.sale_price ?? ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, sale_price: e.target.value }))} />
             <FormInput label="Stock" type="number" min="0" value={form.stock ?? 0} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, stock: e.target.value }))} />
           </div>
         </div>
 
-        <div className="form-section">
-          <h3 className="form-section-title">Categorization</h3>
-          <div className="form-grid form-grid-2">
+        <div className="mb-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <h3 className="mb-5 border-b border-zinc-200 pb-3 text-[15px] font-semibold text-zinc-900">Categorization</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
             <FormSelect label="Category" required options={categories.map((c) => ({ value: c.id, label: c.name }))} value={form.category_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm((f) => ({ ...f, category_id: e.target.value }))} />
             <FormSelect label="Brand" options={brands.map((b) => ({ value: b.id, label: b.name }))} value={form.brand_id ?? ""} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm((f) => ({ ...f, brand_id: e.target.value }))} />
           </div>
         </div>
 
-        <div className="form-section">
-          <h3 className="form-section-title">Media</h3>
+        <div className="mb-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <h3 className="mb-5 border-b border-zinc-200 pb-3 text-[15px] font-semibold text-zinc-900">Media</h3>
           <ImageUpload
             label="Thumbnail"
-            uploadFolder={form.slug.trim() ? getProductGeneralImageFolder(form.slug) : "products/drafts/general"}
+            uploadFolder={form.slug.trim() ? getProductGeneralImageFolder(form.slug) : getProductDraftGeneralImageFolder()}
             value={form.thumbnail_url ?? ""}
             onChange={(url) => setForm((f) => ({ ...f, thumbnail_url: url }))}
           />
 
-          <div className="gallery-section">
-            <div className="gallery-header-row">
+          <div className="mt-6 border-t border-zinc-200 pt-5">
+            <div className="mb-4 flex items-start justify-between gap-4 max-sm:flex-col">
               <div>
-                <h4 className="gallery-title">General Product Gallery</h4>
-                <p className="gallery-sub">Upload multiple shared images for laptops, monitors, and other non-variant product views.</p>
+                <h4 className="text-sm font-semibold text-zinc-900">General Product Gallery</h4>
+                <p className="mt-1 max-w-xl text-xs leading-6 text-zinc-500">Upload multiple shared images for laptops, monitors, and other non-variant product views.</p>
               </div>
-              <button type="button" onClick={addGeneralImage} className="gallery-add-btn">
+              <button type="button" onClick={addGeneralImage} className="whitespace-nowrap rounded-xl border border-zinc-300 bg-zinc-50 px-3.5 py-2.5 text-[13px] font-semibold text-zinc-900 transition-colors hover:border-zinc-400 hover:bg-zinc-100">
                 + Add Gallery Image
               </button>
             </div>
 
             {generalImages.length === 0 ? (
-              <div className="gallery-empty">No shared gallery images yet. Add one or more product views here.</div>
+              <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-[13px] text-zinc-500">No shared gallery images yet. Add one or more product views here.</div>
             ) : (
-              <div className="gallery-list">
+              <div className="grid gap-4">
                 {generalImages.map((image, index) => (
-                  <div key={image.id ?? `gallery-${index}`} className="gallery-card">
-                    <div className="gallery-card-header">
+                  <div key={image.id ?? `gallery-${index}`} className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                    <div className="mb-3.5 flex items-start justify-between gap-4 max-sm:flex-col">
                       <div>
-                        <div className="gallery-card-title">Image {index + 1}</div>
-                        <div className="gallery-card-order">Sort order: {index + 1}</div>
+                        <div className="text-[13px] font-semibold text-zinc-900">Image {index + 1}</div>
+                        <div className="mt-1 text-xs text-zinc-500">Sort order: {index + 1}</div>
                       </div>
-                      <div className="gallery-card-actions">
+                      <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
-                          className="gallery-action-btn"
+                          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-45"
                           onClick={() => moveGeneralImage(index, -1)}
                           disabled={index === 0}
                         >
@@ -303,7 +303,7 @@ export default function EditProductPage() {
                         </button>
                         <button
                           type="button"
-                          className="gallery-action-btn"
+                          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-45"
                           onClick={() => moveGeneralImage(index, 1)}
                           disabled={index === generalImages.length - 1}
                         >
@@ -311,7 +311,7 @@ export default function EditProductPage() {
                         </button>
                         <button
                           type="button"
-                          className="gallery-remove-btn"
+                          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:border-red-300 hover:bg-red-100"
                           onClick={() => removeGeneralImage(index)}
                         >
                           Remove
@@ -321,7 +321,7 @@ export default function EditProductPage() {
 
                     <ImageUpload
                       label="Gallery Image"
-                      uploadFolder={form.slug.trim() ? getProductGeneralImageFolder(form.slug) : "products/drafts/general"}
+                      uploadFolder={form.slug.trim() ? getProductGeneralImageFolder(form.slug) : getProductDraftGeneralImageFolder()}
                       value={image.url}
                       onChange={(url) => updateGeneralImage(index, url)}
                     />
@@ -332,11 +332,11 @@ export default function EditProductPage() {
           </div>
         </div>
 
-        <div className="form-section">
-          <h3 className="form-section-title">Specifications</h3>
+        <div className="mb-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <h3 className="mb-5 border-b border-zinc-200 pb-3 text-[15px] font-semibold text-zinc-900">Specifications</h3>
           <div className="space-y-3">
             {specItems.map((item, index) => (
-              <div key={`spec-${index}`} className="form-grid form-grid-specs">
+              <div key={`spec-${index}`} className="grid items-end gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
                 <FormInput
                   label={index === 0 ? "Label" : "Label"}
                   value={item.key}
@@ -352,63 +352,26 @@ export default function EditProductPage() {
                 <button
                   type="button"
                   onClick={() => removeSpecItem(index)}
-                  className="spec-remove-btn"
+                  className="h-[42px] rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13px] font-semibold text-red-700 transition-colors hover:border-red-300 hover:bg-red-100"
                 >
                   Remove
                 </button>
               </div>
             ))}
-            <button type="button" onClick={addSpecItem} className="spec-add-btn">
+            <button type="button" onClick={addSpecItem} className="w-fit rounded-xl border border-zinc-300 bg-zinc-50 px-3.5 py-2.5 text-[13px] font-semibold text-zinc-900 transition-colors hover:border-zinc-400 hover:bg-zinc-100">
               + Add Specification
             </button>
           </div>
         </div>
 
-        <div className="form-section">
-          <h3 className="form-section-title">Visibility</h3>
-          <div className="form-grid form-grid-2">
+        <div className="mb-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <h3 className="mb-5 border-b border-zinc-200 pb-3 text-[15px] font-semibold text-zinc-900">Visibility</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
             <FormToggle label="Active" checked={!!form.is_active} onChange={(v: boolean) => setForm((f) => ({ ...f, is_active: v }))} />
             <FormToggle label="Featured" checked={!!form.is_featured} onChange={(v: boolean) => setForm((f) => ({ ...f, is_featured: v }))} />
           </div>
         </div>
       </form>
-
-      <style>{`
-        .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; gap: 16px; }
-        .page-title { font-size: 22px; font-weight: 700; color: #f1f5f9; }
-        .page-sub { font-size: 13px; color: #6b7280; margin-top: 2px; }
-        .error-banner { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #f87171; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; }
-        .load-msg { color: #6b7280; padding: 40px; text-align: center; }
-        .form-section { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 24px; margin-bottom: 16px; }
-        .form-section-title { font-size: 15px; font-weight: 600; color: #f1f5f9; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #1f2937; }
-        .form-grid { display: grid; gap: 16px; }
-        .form-grid-2 { grid-template-columns: 1fr 1fr; }
-        .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
-        .form-grid-specs { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; align-items: end; }
-        .gallery-section { margin-top: 24px; border-top: 1px solid #1f2937; padding-top: 20px; }
-        .gallery-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
-        .gallery-title { font-size: 14px; font-weight: 600; color: #f8fafc; }
-        .gallery-sub { margin-top: 4px; font-size: 12px; line-height: 1.6; color: #94a3b8; max-width: 560px; }
-        .gallery-add-btn { border: 1px solid #374151; background: #0f172a; color: #e5e7eb; border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; white-space: nowrap; }
-        .gallery-empty { border: 1px dashed #334155; border-radius: 12px; padding: 18px; font-size: 13px; color: #94a3b8; background: #0b1220; }
-        .gallery-list { display: grid; gap: 16px; }
-        .gallery-card { border: 1px solid #1f2937; border-radius: 12px; padding: 16px; background: #0b1120; }
-        .gallery-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
-        .gallery-card-title { font-size: 13px; font-weight: 600; color: #f8fafc; }
-        .gallery-card-order { margin-top: 4px; font-size: 12px; color: #94a3b8; }
-        .gallery-card-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-        .gallery-action-btn, .gallery-remove-btn { border: 1px solid #374151; border-radius: 8px; padding: 8px 12px; font-size: 12px; font-weight: 600; }
-        .gallery-action-btn { background: #111827; color: #e5e7eb; }
-        .gallery-action-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-        .gallery-remove-btn { background: rgba(127,29,29,0.35); border-color: rgba(248,113,113,0.3); color: #fca5a5; }
-        .spec-add-btn { width: fit-content; border: 1px solid #374151; background: #0f172a; color: #e5e7eb; border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; }
-        .spec-remove-btn { border: 1px solid rgba(248,113,113,0.3); background: rgba(127,29,29,0.35); color: #fca5a5; border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; height: 42px; }
-        @media (max-width: 640px) {
-          .form-grid-2, .form-grid-3, .form-grid-specs { grid-template-columns: 1fr; }
-          .spec-remove-btn { height: auto; }
-          .gallery-header-row, .gallery-card-header { flex-direction: column; }
-        }
-      `}</style>
     </div>
   )
 }

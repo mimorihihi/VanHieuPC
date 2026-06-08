@@ -1,0 +1,56 @@
+{
+  "Footer": {
+    "newsletter": {
+      "title": "Đăng ký nhận bản tin.",
+      "subtitle": "Nhận ưu đãi mới nhất sớm nhất.",
+      "placeholder": "Email của bạn",
+      "subscribe": "Đăng ký"
+    },
+    "titles": {
+      "information": "Thông tin",
+      "parts": "Linh kiện PC",
+      "desktop": "PC để bàn",
+      "laptops": "Laptop",
+      "address": "Địa chỉ"
+    },
+    "information": {
+      "aboutUs": "Về chúng tôi",
+      "privacy": "Chính sách bảo mật",
+      "search": "Tìm kiếm",
+      "terms": "Điều khoản",
+      "ordersReturns": "Đơn hàng và đổi trả",
+      "contactUs": "Liên hệ",
+      "advancedSearch": "Tìm kiếm nâng cao",
+      "newsletter": "Đăng ký bản tin"
+    },
+    "parts": {
+      "cpus": "CPU",
+      "addonCards": "Card mở rộng",
+      "hdd": "Ổ cứng HDD",
+      "graphicCards": "Card đồ họa",
+      "keyboardMouse": "Bàn phím / Chuột",
+      "ram": "RAM (Bộ nhớ)",
+      "software": "Phần mềm",
+      "motherboards": "Mainboard"
+    },
+    "desktop": {
+      "custom": "PC tùy chỉnh",
+      "servers": "Máy chủ",
+      "msi": "MSI All-In-One",
+      "hp": "HP/Compaq",
+      "asus": "ASUS"
+    },
+    "laptops": {
+      "everyday": "Laptop phổ thông",
+      "msi": "Laptop MSI",
+      "hp": "Laptop HP",
+      "asus": "Laptop ASUS",
+      "workstation": "Laptop Workstation"
+    },
+    "address": {
+      "street": "Địa chỉ: 1234 Street Address City Address, 1234",
+      "phone": "Điện thoại"
+    },
+    "copyright": "© 2026 DATNECOMM. All Rights Reserved."
+  }
+}

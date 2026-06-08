@@ -1,0 +1,22 @@
+{
+  "Header": {
+    "hoursLabel": "Mon-Thu:",
+    "hoursValue": "9:00 AM - 5:30 PM",
+    "showroomText": "Visit our showroom at 1234 Street Address, City Address, 1234",
+    "contactUs": "Contact Us",
+    "callUs": "Call Us:",
+    "nav": {
+      "pcGaming": "PC Gaming",
+      "pcWorkstation": "Workstations",
+      "laptops": "Laptops",
+      "monitors": "Monitors",
+      "other": "All Products",
+      "deals": "New Products"
+    },
+    "search": "Search",
+    "cart": "Cart",
+    "account": "User account",
+    "menu": "Menu",
+    "settings": "Settings"
+  }
+}

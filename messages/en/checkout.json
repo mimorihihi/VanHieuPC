@@ -1,0 +1,42 @@
+{
+  "Checkout": {
+    "breadcrumbHome": "Home",
+    "breadcrumbCart": "Cart",
+    "title": "Checkout",
+    "shippingTitle": "Shipping Information",
+    "summaryTitle": "Order Summary",
+    "loading": "Loading checkout...",
+    "empty": "Your cart is empty.",
+    "signIn": "Sign In",
+    "emailHint": "You can create an account after checkout.",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "vat": "VAT (10%)",
+    "discount": "Discount",
+    "couponApplied": "Applied coupon:",
+    "invalidItems": "Some items are no longer available. Update your cart before continuing.",
+    "total": "Total",
+    "shippingMethod": "Fulfillment & payment method",
+    "checkoutMethod": "Fulfillment & payment option",
+    "pickupTitle": "Pickup From Store",
+    "pickupHint": "Collect your order at the showroom with no shipping fee.",
+    "onlinePaymentTitle": "Online Payment",
+    "onlinePaymentHint": "Pay through VNPAY after confirming your order.",
+    "next": "Next",
+    "itemCount": "{count} item(s) in cart",
+    "steps": {
+      "shipping": "Shipping",
+      "review": "Review & Payments"
+    },
+    "fields": {
+      "email": "Email Address",
+      "fullName": "Full name",
+      "phone": "Phone number",
+      "address": "Street address",
+      "province": "Province / City",
+      "district": "District",
+      "ward": "Ward",
+      "note": "Order note"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "Header": {
+    "hoursLabel": "Thứ 2 - Thứ 5:",
+    "hoursValue": "9:00 - 17:30",
+    "showroomText": "Ghé showroom tại 1234 Street Address, City Address, 1234",
+    "contactUs": "Liên hệ",
+    "callUs": "Gọi ngay:",
+    "nav": {
+      "pcGaming": "PC Gaming",
+      "pcWorkstation": "PC Đồ hoạ - Làm việc",
+      "laptops": "Laptop",
+      "monitors": "Màn hình",
+      "other": "Tất cả sản phẩm",
+      "deals": "Sản phẩm mới"
+    },
+    "search": "Tìm kiếm",
+    "cart": "Giỏ hàng",
+    "account": "Tài khoản",
+    "menu": "Menu",
+    "settings": "Cài đặt"
+  }
+}

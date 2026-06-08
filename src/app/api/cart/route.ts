@@ -1,9 +1,9 @@
+import { getAuthUser } from "@/lib/auth"
 import { execute, query } from "@/lib/db"
 import { NextRequest } from "next/server"
 import type { RowDataPacket } from "mysql2/promise"
 
 type AddCartBody = {
-  user_id?: string
   product_id?: string
   variant_id?: string | null
   quantity?: number
@@ -61,6 +61,11 @@ function toPositiveInt(value: unknown, fallback = 1) {
   return Math.floor(num)
 }
 
+async function requireAuthUserId() {
+  const authUser = await getAuthUser()
+  return authUser?.id ?? ""
+}
+
 async function getOrCreateCartId(userId: string) {
   const [cartRows] = await query<CartIdRow[]>(
     `SELECT id
@@ -84,11 +89,11 @@ async function getOrCreateCartId(userId: string) {
   return id
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const userId = req.nextUrl.searchParams.get("user_id")?.trim() ?? ""
+    const userId = await requireAuthUserId()
     if (!userId) {
-      return Response.json({ error: "user_id is required" }, { status: 400 })
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const [rows] = await query<CartRow[]>(
@@ -136,17 +141,18 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const userId = await requireAuthUserId()
+    if (!userId) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const body: AddCartBody = await req.json()
-    const userId = body.user_id?.trim() ?? ""
     const productId = body.product_id?.trim() ?? ""
     const variantId = body.variant_id ?? null
     const quantity = toPositiveInt(body.quantity, 1)
 
-    if (!userId || !productId) {
-      return Response.json(
-        { error: "user_id and product_id are required" },
-        { status: 400 }
-      )
+    if (!productId) {
+      return Response.json({ error: "product_id is required" }, { status: 400 })
     }
 
     const [productRows] = await query<ProductRow[]>(

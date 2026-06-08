@@ -1,3 +1,4 @@
+import { getAuthUser } from "@/lib/auth"
 import { getConnection, query } from "@/lib/db"
 import { NextRequest } from "next/server"
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise"
@@ -13,7 +14,6 @@ type CheckoutItemInput = {
 }
 
 type CheckoutBody = {
-  user_id?: string
   items?: CheckoutItemInput[]
   coupon_id?: string | null
   checkout_option?: CheckoutOption
@@ -130,7 +130,8 @@ export async function POST(req: NextRequest) {
       address: String(body.shipping_address?.address ?? "").trim(),
     }
     const note = String(body.note ?? "").trim()
-    const userId = body.user_id?.trim() ?? ""
+    const authUser = await getAuthUser()
+    const userId = authUser?.id ?? ""
 
     if (!shippingAddress.email || !shippingAddress.fullName || !shippingAddress.phone) {
       return Response.json({ error: "Thiếu thông tin liên hệ" }, { status: 400 })

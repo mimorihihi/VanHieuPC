@@ -1,3 +1,4 @@
+import { getAuthUser } from "@/lib/auth"
 import { execute, query } from "@/lib/db"
 import { NextRequest } from "next/server"
 import type { RowDataPacket } from "mysql2/promise"
@@ -11,6 +12,12 @@ type UserRow = RowDataPacket & {
   role: string
   is_active: number | boolean
   created_at: string
+}
+
+type UpdateProfileBody = {
+  name?: string
+  phone?: string | null
+  avatar_url?: string | null
 }
 
 function getErrorMessage(error: unknown) {
@@ -30,11 +37,11 @@ function serializeUser(user: UserRow) {
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
-    const userId = req.nextUrl.searchParams.get("user_id")?.trim() ?? ""
-    if (!userId) {
-      return Response.json({ error: "user_id is required" }, { status: 400 })
+    const authUser = await getAuthUser()
+    if (!authUser) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const [rows] = await query<UserRow[]>(
@@ -42,8 +49,9 @@ export async function GET(req: NextRequest) {
        FROM users
        WHERE id = ?
        LIMIT 1`,
-      [userId]
+      [authUser.id]
     )
+
     const user = rows[0]
     if (!user) {
       return Response.json({ error: "User not found" }, { status: 404 })
@@ -57,21 +65,25 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const body = await req.json()
-    const userId = body.user_id?.trim() ?? ""
-    const name = body.name?.trim() ?? ""
-    const phone = body.phone?.trim() ?? null
-    const avatarUrl = body.avatar_url?.trim() ?? null
+    const authUser = await getAuthUser()
+    if (!authUser) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
-    if (!userId || !name) {
-      return Response.json({ error: "user_id and name are required" }, { status: 400 })
+    const body = (await req.json()) as UpdateProfileBody
+    const name = body.name?.trim() ?? ""
+    const phone = body.phone?.trim() || null
+    const avatarUrl = body.avatar_url?.trim() || null
+
+    if (!name) {
+      return Response.json({ error: "name is required" }, { status: 400 })
     }
 
     await execute(
       `UPDATE users
        SET name = ?, phone = ?, avatar_url = ?
        WHERE id = ?`,
-      [name, phone, avatarUrl, userId]
+      [name, phone, avatarUrl, authUser.id]
     )
 
     const [rows] = await query<UserRow[]>(
@@ -79,10 +91,15 @@ export async function PATCH(req: NextRequest) {
        FROM users
        WHERE id = ?
        LIMIT 1`,
-      [userId]
+      [authUser.id]
     )
 
-    return Response.json({ user: serializeUser(rows[0]) })
+    const user = rows[0]
+    if (!user) {
+      return Response.json({ error: "User not found" }, { status: 404 })
+    }
+
+    return Response.json({ user: serializeUser(user) })
   } catch (error: unknown) {
     return Response.json({ error: getErrorMessage(error) }, { status: 500 })
   }

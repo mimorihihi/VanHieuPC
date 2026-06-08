@@ -1,3 +1,4 @@
+import { getAuthUser } from "@/lib/auth"
 import { execute, query } from "@/lib/db"
 import { NextRequest } from "next/server"
 import type { RowDataPacket } from "mysql2/promise"
@@ -21,11 +22,16 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Failed"
 }
 
-export async function GET(req: NextRequest) {
+async function requireAuthUserId() {
+  const authUser = await getAuthUser()
+  return authUser?.id ?? ""
+}
+
+export async function GET() {
   try {
-    const userId = req.nextUrl.searchParams.get("user_id")?.trim() ?? ""
+    const userId = await requireAuthUserId()
     if (!userId) {
-      return Response.json({ error: "user_id is required" }, { status: 400 })
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const [rows] = await query<WishlistRow[]>(
@@ -65,11 +71,15 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const userId = await requireAuthUserId()
+    if (!userId) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const body = await req.json()
-    const userId = body.user_id?.trim() ?? ""
     const productId = body.product_id?.trim() ?? ""
-    if (!userId || !productId) {
-      return Response.json({ error: "user_id and product_id are required" }, { status: 400 })
+    if (!productId) {
+      return Response.json({ error: "product_id is required" }, { status: 400 })
     }
 
     const [existingRows] = await query<RowDataPacket[]>(
@@ -93,11 +103,15 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const userId = await requireAuthUserId()
+    if (!userId) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const body = await req.json()
-    const userId = body.user_id?.trim() ?? ""
     const productId = body.product_id?.trim() ?? ""
-    if (!userId || !productId) {
-      return Response.json({ error: "user_id and product_id are required" }, { status: 400 })
+    if (!productId) {
+      return Response.json({ error: "product_id is required" }, { status: 400 })
     }
 
     await execute("DELETE FROM wishlists WHERE user_id = ? AND product_id = ?", [userId, productId])

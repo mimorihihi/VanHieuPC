@@ -113,8 +113,8 @@ async function getHomeCategories() {
     const [result] = await query(
       `SELECT slug, name, image_url
        FROM categories
-       WHERE slug IN (?, ?, ?, ?, ?)`,
-      ["custom-build", "laptops", "desktops", "desktop-pcs", "monitors"]
+       WHERE slug IN (?, ?, ?, ?)`,
+      ["pc-gaming", "pc-do-hoa-lam-viec", "laptops", "monitors"]
     )
 
     const rows = result as HomeCategoryRow[]
@@ -152,32 +152,28 @@ async function getHomeBrands() {
 }
 
 export default async function Home() {
-  const desktopCategorySlugs = ["desktops", "desktop-pcs"]
   const [
     banners,
     brands,
     homeCategories,
     newProducts,
-    customBuildProducts,
+    gamingProducts,
     laptopProducts,
-    desktopCategoryResult,
+    workstationProducts,
     monitorProducts
   ] = await Promise.all([
     getBanners(),
     getHomeBrands(),
     getHomeCategories(),
     getAllProducts(10),
-    getProductsByCategory("custom-build", 8),
+    getProductsByCategory("pc-gaming", 8),
     getProductsByCategory("laptops", 8),
-    getProductsByCategorySlugs(desktopCategorySlugs, 8),
+    getProductsByCategory("pc-do-hoa-lam-viec", 8),
     getProductsByCategory("monitors", 8)
   ])
 
-  const desktopProducts = desktopCategoryResult.products
   const desktopCategoryImage =
-    homeCategories[desktopCategoryResult.slug]?.image_url
-    ?? homeCategories.desktops?.image_url
-    ?? homeCategories["desktop-pcs"]?.image_url
+    homeCategories["pc-do-hoa-lam-viec"]?.image_url
     ?? null
 
   // Chuyển Decimal → string để tránh lỗi serialization
@@ -220,17 +216,17 @@ export default async function Home() {
         {/* 2. New Products → Promo → Custom Builds → Laptops → Desktops → Monitors */}
         <HomeClient
           categoryImages={{
-            customBuild: homeCategories["custom-build"]?.image_url ?? null,
+            gaming: homeCategories["pc-gaming"]?.image_url ?? null,
             laptops: homeCategories["laptops"]?.image_url ?? null,
-            desktops: desktopCategoryImage,
+            workstation: desktopCategoryImage,
             monitors: homeCategories["monitors"]?.image_url ?? null,
           }}
-          customBuildCategorySlug="custom-build"
-          desktopCategorySlug={desktopCategoryResult.slug}
+          gamingCategorySlug="pc-gaming"
+          workstationCategorySlug="pc-do-hoa-lam-viec"
           newProducts={serialize(newProducts)}
-          customBuildProducts={serialize(customBuildProducts)}
+          gamingProducts={serialize(gamingProducts)}
           laptopProducts={serialize(laptopProducts)}
-          desktopProducts={serialize(desktopProducts)}
+          workstationProducts={serialize(workstationProducts)}
           monitorProducts={serialize(monitorProducts)}
         />
 

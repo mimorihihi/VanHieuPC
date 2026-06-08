@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import { CategorySection } from "@/components/home/category-section"
 import { PromoBanner } from "@/components/home/promo-banner"
 import { CLOUDINARY_IMAGES } from "@/lib/cloudinary-images"
@@ -19,44 +18,31 @@ interface Product {
 
 interface HomeClientProps {
   categoryImages: {
-    customBuild: string | null
+    gaming: string | null
     laptops: string | null
-    desktops: string | null
+    workstation: string | null
     monitors: string | null
   }
-  customBuildCategorySlug: string
-  desktopCategorySlug: string
+  gamingCategorySlug: string
+  workstationCategorySlug: string
   newProducts: Product[]
-  customBuildProducts: Product[]
+  gamingProducts: Product[]
   laptopProducts: Product[]
-  desktopProducts: Product[]
+  workstationProducts: Product[]
   monitorProducts: Product[]
 }
 
 export function HomeClient({
   categoryImages,
-  customBuildCategorySlug,
-  desktopCategorySlug,
+  gamingCategorySlug,
+  workstationCategorySlug,
   newProducts,
-  customBuildProducts,
+  gamingProducts,
   laptopProducts,
-  desktopProducts,
+  workstationProducts,
   monitorProducts,
 }: HomeClientProps) {
   const fallbackSectionImage = CLOUDINARY_IMAGES.fallbackSection
-  const laptopTabs = ["MSI", "Razer", "Gigabyte", "ASUS"]
-  const desktopTabs = ["MSI", "Corsair", "Gigabyte", "ASUS"]
-
-  const [activeLaptopTab, setActiveLaptopTab] = useState(laptopTabs[0])
-  const [activeDesktopTab, setActiveDesktopTab] = useState(desktopTabs[0])
-
-  const filterProductsByBrand = (products: Product[], brand: string) => {
-    const filtered = products.filter((product) => product.name.startsWith(`${brand} `))
-    return filtered.length > 0 ? filtered : products
-  }
-
-  const visibleLaptopProducts = filterProductsByBrand(laptopProducts, activeLaptopTab)
-  const visibleDesktopProducts = filterProductsByBrand(desktopProducts, activeDesktopTab)
 
   return (
     <>
@@ -74,57 +60,55 @@ export function HomeClient({
       {/* 2. Promo/Payment Banner — between New Products and Custom Builds */}
       <PromoBanner />
 
-      {/* 3. Custom Builds section — featured card + grid, no header */}
+      {/* 3. PC Gaming */}
       <CategorySection
-        products={customBuildProducts}
-        maxItems={5}
+        title="PC Gaming"
+        products={gamingProducts}
+        maxItems={4}
         featuredCard={{
-          title: "Custom\nBuilds",
-          image: categoryImages.customBuild ?? customBuildProducts[0]?.thumbnail_url ?? fallbackSectionImage,
-          href: `/products?category=${customBuildCategorySlug}`,
-          buttonText: "Explore Builds",
+          title: "PC\nGaming",
+          image: categoryImages.gaming ?? gamingProducts[0]?.thumbnail_url ?? fallbackSectionImage,
+          href: `/products?category=${gamingCategorySlug}`,
+          buttonText: "Shop Gaming PCs",
         }}
         className="bg-white"
       />
 
-      {/* 4. Laptops section */}
+      {/* 4. PC Đồ hoạ - Làm việc */}
       <CategorySection
-        tabs={laptopTabs}
-        activeTab={activeLaptopTab}
-        onTabChange={setActiveLaptopTab}
-        products={visibleLaptopProducts}
-        maxItems={5}
+        title="PC Workstation"
+        products={workstationProducts}
+        maxItems={4}
         featuredCard={{
-          title: "Gaming\nLaptops",
-          image: categoryImages.laptops ?? visibleLaptopProducts[0]?.thumbnail_url ?? fallbackSectionImage,
+          title: "PC Workstation",
+          image: categoryImages.workstation ?? workstationProducts[0]?.thumbnail_url ?? fallbackSectionImage,
+          href: `/products?category=${workstationCategorySlug}`,
+          buttonText: "Shop Workstations",
+        }}
+        className="bg-white"
+      />
+
+      {/* 5. Laptop */}
+      <CategorySection
+        title="Laptop"
+        products={laptopProducts}
+        maxItems={4}
+        featuredCard={{
+          title: "Laptop",
+          image: categoryImages.laptops ?? laptopProducts[0]?.thumbnail_url ?? fallbackSectionImage,
           href: "/products?category=laptops",
           buttonText: "Shop Laptops",
         }}
         className="bg-white"
       />
 
-      {/* 5. Desktops section */}
+      {/* 6. Monitor */}
       <CategorySection
-        tabs={desktopTabs}
-        activeTab={activeDesktopTab}
-        onTabChange={setActiveDesktopTab}
-        products={visibleDesktopProducts}
-        maxItems={5}
-        featuredCard={{
-          title: "Desktop\nPCs",
-          image: categoryImages.desktops ?? visibleDesktopProducts[0]?.thumbnail_url ?? fallbackSectionImage,
-          href: `/products?category=${desktopCategorySlug}`,
-          buttonText: "Shop Desktops",
-        }}
-        className="bg-white"
-      />
-
-      {/* 6. Gaming Monitors section — featured card + grid, no header */}
-      <CategorySection
+        title="Monitor"
         products={monitorProducts}
-        maxItems={5}
+        maxItems={4}
         featuredCard={{
-          title: "Gaming\nMonitors",
+          title: "Monitor",
           image: categoryImages.monitors ?? monitorProducts[0]?.thumbnail_url ?? fallbackSectionImage,
           href: "/products?category=monitors",
           buttonText: "Shop Monitors",

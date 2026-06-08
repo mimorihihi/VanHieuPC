@@ -1,3 +1,4 @@
+import { getAuthUser } from "@/lib/auth"
 import { execute, query } from "@/lib/db"
 import { NextRequest } from "next/server"
 import type { RowDataPacket } from "mysql2/promise"
@@ -22,11 +23,16 @@ function parseIsDefault(value: unknown) {
   return value === true || value === "true" || value === 1 || value === "1"
 }
 
-export async function GET(req: NextRequest) {
+async function requireAuthUserId() {
+  const authUser = await getAuthUser()
+  return authUser?.id ?? ""
+}
+
+export async function GET() {
   try {
-    const userId = req.nextUrl.searchParams.get("user_id")?.trim() ?? ""
+    const userId = await requireAuthUserId()
     if (!userId) {
-      return Response.json({ error: "user_id is required" }, { status: 400 })
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const [rows] = await query<AddressRow[]>(
@@ -50,8 +56,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const userId = await requireAuthUserId()
+    if (!userId) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const body = await req.json()
-    const userId = body.user_id?.trim() ?? ""
     const fullName = body.full_name?.trim() ?? ""
     const phone = body.phone?.trim() ?? ""
     const province = body.province?.trim() ?? ""
@@ -60,7 +70,7 @@ export async function POST(req: NextRequest) {
     const addressLine = body.address_line?.trim() ?? ""
     const isDefault = parseIsDefault(body.is_default)
 
-    if (!userId || !fullName || !phone || !province || !district || !ward || !addressLine) {
+    if (!fullName || !phone || !province || !district || !ward || !addressLine) {
       return Response.json({ error: "All address fields are required" }, { status: 400 })
     }
 
@@ -79,9 +89,9 @@ export async function POST(req: NextRequest) {
     const [rows] = await query<AddressRow[]>(
       `SELECT id, user_id, full_name, phone, province, district, ward, address_line, is_default
        FROM addresses
-       WHERE id = ?
+       WHERE id = ? AND user_id = ?
        LIMIT 1`,
-      [id]
+      [id, userId]
     )
 
     const address = rows[0]

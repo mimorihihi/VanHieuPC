@@ -1,15 +1,14 @@
+import { getAuthUser } from "@/lib/auth"
 import { execute, query } from "@/lib/db"
 import { NextRequest } from "next/server"
 import type { RowDataPacket } from "mysql2/promise"
 
 type UpdateCartItemBody = {
-  user_id?: string
   item_id?: string
   quantity?: number
 }
 
 type DeleteCartItemBody = {
-  user_id?: string
   item_id?: string
 }
 
@@ -35,15 +34,24 @@ function toPositiveInt(value: unknown, fallback = 1) {
   return Math.floor(num)
 }
 
+async function requireAuthUserId() {
+  const authUser = await getAuthUser()
+  return authUser?.id ?? ""
+}
+
 export async function PATCH(req: NextRequest) {
   try {
+    const userId = await requireAuthUserId()
+    if (!userId) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const body: UpdateCartItemBody = await req.json()
-    const userId = body.user_id?.trim() ?? ""
     const itemId = body.item_id?.trim() ?? ""
     const quantity = toPositiveInt(body.quantity, 1)
 
-    if (!userId || !itemId) {
-      return Response.json({ error: "user_id and item_id are required" }, { status: 400 })
+    if (!itemId) {
+      return Response.json({ error: "item_id is required" }, { status: 400 })
     }
 
     const [itemRows] = await query<CartItemStockRow[]>(
@@ -80,12 +88,16 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const userId = await requireAuthUserId()
+    if (!userId) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const body: DeleteCartItemBody = await req.json()
-    const userId = body.user_id?.trim() ?? ""
     const itemId = body.item_id?.trim() ?? ""
 
-    if (!userId || !itemId) {
-      return Response.json({ error: "user_id and item_id are required" }, { status: 400 })
+    if (!itemId) {
+      return Response.json({ error: "item_id is required" }, { status: 400 })
     }
 
     const [rows] = await query<CartItemDeleteRow[]>(
