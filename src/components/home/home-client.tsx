@@ -13,6 +13,7 @@ interface Product {
   stock: number
   thumbnail_url: string | null
   avg_rating: string | number
+  review_count?: string | number
   category_name?: string
 }
 

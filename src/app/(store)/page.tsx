@@ -8,6 +8,8 @@ import { BrandLogosStrip } from "@/components/home/brand-logos-strip"
 import { HomeClient } from "@/components/home/home-client"
 import { query } from "@/lib/db"
 
+export const dynamic = "force-dynamic"
+
 type HomeCategoryRow = {
   slug: string
   name: string
@@ -37,6 +39,7 @@ type HomeProductRow = {
   stock: number
   thumbnail_url: string | null
   avg_rating: number | string | { toString?: () => string } | null
+  review_count: number | string | { toString?: () => string } | null
   category_name?: string
 }
 
@@ -66,10 +69,16 @@ async function getBanners() {
 async function getProductsByCategory(categorySlug: string, limit = 10) {
   try {
     const [result] = await query(
-      `SELECT p.id, p.slug, p.name, p.price, p.sale_price, p.stock, p.thumbnail_url, p.avg_rating, c.name as category_name
+      `SELECT
+         p.id, p.slug, p.name, p.price, p.sale_price, p.stock, p.thumbnail_url,
+         COALESCE(AVG(r.rating), 0) as avg_rating,
+         COUNT(r.id) as review_count,
+         c.name as category_name
        FROM products p
        LEFT JOIN categories c ON p.category_id = c.id
+       LEFT JOIN reviews r ON r.product_id = p.id
        WHERE p.is_active = true AND c.slug = ?
+       GROUP BY p.id, p.slug, p.name, p.price, p.sale_price, p.stock, p.thumbnail_url, c.name, p.created_at
        ORDER BY p.created_at DESC
        LIMIT ?`,
       [categorySlug, limit]
@@ -94,10 +103,16 @@ async function getProductsByCategorySlugs(categorySlugs: string[], limit = 10) {
 async function getAllProducts(limit = 10) {
   try {
     const [result] = await query(
-      `SELECT p.id, p.slug, p.name, p.price, p.sale_price, p.stock, p.thumbnail_url, p.avg_rating, c.name as category_name
+      `SELECT
+         p.id, p.slug, p.name, p.price, p.sale_price, p.stock, p.thumbnail_url,
+         COALESCE(AVG(r.rating), 0) as avg_rating,
+         COUNT(r.id) as review_count,
+         c.name as category_name
        FROM products p
        LEFT JOIN categories c ON p.category_id = c.id
+       LEFT JOIN reviews r ON r.product_id = p.id
        WHERE p.is_active = true
+       GROUP BY p.id, p.slug, p.name, p.price, p.sale_price, p.stock, p.thumbnail_url, c.name, p.created_at
        ORDER BY p.created_at DESC
        LIMIT ?`,
       [limit]
@@ -187,6 +202,7 @@ export default async function Home() {
       stock: Number(p.stock ?? 0),
       thumbnail_url: normalizeImageUrl(p.thumbnail_url),
       avg_rating: String(p.avg_rating ?? 0),
+      review_count: Number(p.review_count ?? 0),
       category_name: p.category_name,
     }))
 

@@ -15,6 +15,7 @@ interface Product {
   stock: number
   thumbnail_url: string | null
   avg_rating: string | number
+  review_count?: string | number
   category_name?: string
 }
 
@@ -188,6 +189,7 @@ export function CategorySection({
                     price={product.sale_price ?? product.price}
                     originalPrice={product.sale_price ? product.price : undefined}
                     rating={Math.round(Number(product.avg_rating) || 0)}
+                    reviewCount={Number(product.review_count ?? 0)}
                     inStock={product.stock > 0}
                   />
                 </Link>

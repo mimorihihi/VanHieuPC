@@ -1,7 +1,7 @@
 "use client"
 
-import { type ReactNode, useState, useCallback, useTransition } from "react"
-import { useRouter, usePathname } from "next/navigation"
+import { type ReactNode, useState, useCallback } from "react"
+import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { ProductCard } from "@/components/product-card"
 import { SlidersHorizontal, LayoutGrid, List, ChevronLeft, ChevronRight, X, Search, ChevronDown } from "lucide-react"
@@ -18,6 +18,7 @@ interface Product {
 interface Category { id: string; name: string; slug: string }
 interface Brand    { id: string; name: string; slug: string }
 interface PriceRange { min: number; max: number }
+type ViewMode = "grid" | "list"
 interface Filters {
   category?: string
   brand?: string
@@ -27,6 +28,7 @@ interface Filters {
   page?: number
   limit?: number
   search?: string
+  view?: ViewMode
 }
 
 interface Props {
@@ -37,6 +39,12 @@ interface Props {
   brands:           Brand[]
   priceRange:       PriceRange
   initialFilters:   Record<string, string>
+}
+
+interface ProductsResponse {
+  products?: Product[]
+  total?: number
+  totalPages?: number
 }
 
 const SORT_OPTIONS = [
@@ -53,15 +61,15 @@ export function CatalogClient({
   initialProducts, initialTotal, initialTotalPages,
   categories, brands, priceRange, initialFilters,
 }: Props) {
-  const router     = useRouter()
   const pathname   = usePathname()
-  const [, startTransition] = useTransition()
 
   const [products,   setProducts]   = useState(initialProducts)
   const [total,      setTotal]      = useState(initialTotal)
   const [totalPages, setTotalPages] = useState(initialTotalPages)
   const [loading,    setLoading]    = useState(false)
-  const [viewMode,   setViewMode]   = useState<"grid" | "list">("grid")
+  const [viewMode,   setViewMode]   = useState<ViewMode>(
+    initialFilters.view === "list" ? "list" : "grid"
+  )
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   /* live filter state */
@@ -81,7 +89,7 @@ export function CatalogClient({
     Object.entries(params).forEach(([k, v]) => { if (v) q.set(k, String(v)) })
     try {
       const res  = await fetch(`/api/products?${q}`)
-      const data = await res.json()
+      const data = (await res.json()) as ProductsResponse
       setProducts(data.products ?? [])
       setTotal(data.total ?? 0)
       setTotalPages(data.totalPages ?? 0)
@@ -95,14 +103,24 @@ export function CatalogClient({
       search, category, brand, sort,
       minPrice, maxPrice,
       limit, page: 1,
+      view: viewMode,
       ...overrides,
     }
     fetchProducts(next)
     /* sync URL */
     const q = new URLSearchParams()
     Object.entries(next).forEach(([k, v]) => { if (v && v !== "1" && !(k === "limit" && Number(v) === 20)) q.set(k, String(v)) })
-    startTransition(() => router.replace(`${pathname}?${q}`, { scroll: false }))
-  }, [search, category, brand, sort, minPrice, maxPrice, limit, fetchProducts, pathname, router])
+    const nextUrl = q.toString() ? `${pathname}?${q}` : pathname
+    window.history.replaceState(null, "", nextUrl)
+  }, [search, category, brand, sort, minPrice, maxPrice, limit, viewMode, fetchProducts, pathname])
+
+  const changeViewMode = useCallback((mode: ViewMode) => {
+    setViewMode(mode)
+
+    const q = new URLSearchParams(window.location.search)
+    q.set("view", mode)
+    window.history.replaceState(null, "", `${pathname}?${q.toString()}`)
+  }, [pathname])
 
   const clearFilter = (key: string) => {
     if (key === "category") { setCategory(""); applyFilters({ category: "" }) }
@@ -114,8 +132,10 @@ export function CatalogClient({
 
   const clearAll = () => {
     setCategory(""); setBrand(""); setMinPrice(""); setMaxPrice(""); setSearch("")
-    fetchProducts({ sort, limit, page: 1 })
-    startTransition(() => router.replace(pathname, { scroll: false }))
+    fetchProducts({ sort, limit, page: 1, view: viewMode })
+    const q = new URLSearchParams()
+    q.set("view", viewMode)
+    window.history.replaceState(null, "", `${pathname}?${q.toString()}`)
   }
 
   const goPage = (p: number) => {
@@ -132,7 +152,7 @@ export function CatalogClient({
   if (minPrice) activeChips.push({ key: "minPrice", label: `≥ $${minPrice}` })
   if (maxPrice) activeChips.push({ key: "maxPrice", label: `≤ $${maxPrice}` })
 
-  const fmt = (v: string | number) => Number(v).toLocaleString("en-US", { minimumFractionDigits: 0 })
+  const fmt = (v: string | number) => `${Number(v).toLocaleString("vi-VN", { maximumFractionDigits: 0 })} đ`
 
   return (
     <main className="flex-1 bg-white">
@@ -326,11 +346,11 @@ export function CatalogClient({
               </div>
               {/* View toggle */}
               <div className="flex items-center gap-1 border border-zinc-200 rounded overflow-hidden">
-                <button onClick={() => setViewMode("grid")}
+                <button type="button" onClick={() => changeViewMode("grid")}
                   className={`p-2 ${viewMode === "grid" ? "bg-blue-600 text-white" : "text-zinc-500 hover:bg-zinc-50"}`}>
                   <LayoutGrid className="h-4 w-4" />
                 </button>
-                <button onClick={() => setViewMode("list")}
+                <button type="button" onClick={() => changeViewMode("list")}
                   className={`p-2 ${viewMode === "list" ? "bg-blue-600 text-white" : "text-zinc-500 hover:bg-zinc-50"}`}>
                   <List className="h-4 w-4" />
                 </button>
@@ -393,8 +413,8 @@ export function CatalogClient({
                       <h3 className="text-sm font-semibold text-zinc-800 group-hover:text-blue-600 transition-colors line-clamp-2 mb-1">{p.name}</h3>
                       {p.category && <p className="text-[11px] text-zinc-400 mb-2">{p.category.name}{p.brand ? ` · ${p.brand.name}` : ""}</p>}
                       <div className="flex items-center gap-2">
-                        <span className="text-base font-bold text-zinc-900">${fmt(p.sale_price ?? p.price)}</span>
-                        {p.sale_price && <span className="text-xs text-zinc-400 line-through">${fmt(p.price)}</span>}
+                        <span className="text-base font-bold text-zinc-900">{fmt(p.sale_price ?? p.price)}</span>
+                        {p.sale_price && <span className="text-xs text-zinc-400 line-through">{fmt(p.price)}</span>}
                       </div>
                     </div>
                     <div className="flex flex-row items-center justify-between gap-2 sm:flex-col sm:items-end">
