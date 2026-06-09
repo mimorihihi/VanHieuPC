@@ -38,9 +38,13 @@ export function formatRecommendationReply(
   }>,
   intent: ProductRecommendationIntent
 ) {
+  const displayBudget = intent.minPrice && intent.maxPrice
+    ? Math.round((intent.minPrice + intent.maxPrice) / 2)
+    : null
   const criteria = [
     intent.category ? `nhóm ${intent.category}` : null,
-    intent.maxPrice ? `ngân sách tối đa ${formatCurrency(intent.maxPrice)}` : null,
+    displayBudget ? `ngân sách khoảng ${formatCurrency(displayBudget)}` : null,
+    !intent.minPrice && intent.maxPrice ? `ngân sách tối đa ${formatCurrency(intent.maxPrice)}` : null,
     intent.minPrice && !intent.maxPrice ? `từ ${formatCurrency(intent.minPrice)}` : null,
   ].filter(Boolean)
   const intro = criteria.length

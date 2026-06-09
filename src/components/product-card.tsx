@@ -43,12 +43,12 @@ export function ProductCard({
       </div>
 
       <div
-        className="relative mb-3 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl bg-zinc-50"
+        className="relative mb-3 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl bg-white"
       >
         <img
           src={image.trim() || "/images/placeholder.png"}
           alt={name}
-          className="max-h-full max-w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+          className="max-h-full max-w-full scale-110 object-contain p-2 transition-transform duration-300 group-hover:scale-[1.16]"
         />
       </div>
 

@@ -9,21 +9,25 @@ const QUICK_ACTIONS = [
   {
     id: "faq-shipping",
     label: "Chính sách giao hàng",
+    message: "Shop có giao hàng toàn quốc không?",
     icon: Package,
   },
   {
     id: "faq-payment",
     label: "Hướng dẫn thanh toán",
+    message: "Shop hỗ trợ thanh toán như thế nào?",
     icon: Sparkles,
   },
   {
-    id: "product-price",
-    label: "Kiểm tra giá sản phẩm",
-    icon: Search,
+    id: "faq-return",
+    label: "Chính sách đổi trả",
+    message: "Chính sách đổi trả hoặc bảo hành của shop như thế nào?",
+    icon: MessageSquare,
   },
   {
-    id: "product-stock",
-    label: "Kiểm tra tồn kho",
+    id: "faq-warranty",
+    label: "Chính sách bảo hành",
+    message: "Chính sách bảo hành của shop như thế nào?",
     icon: ShoppingCart,
   },
 ] as const
@@ -194,7 +198,7 @@ export function ChatbotWidget() {
     const action = QUICK_ACTIONS.find((item) => item.id === actionId)
     if (!action) return
 
-    void sendMessage(action.label)
+    void sendMessage(action.message)
   }
 
   const handleStartNewChat = () => {

@@ -143,23 +143,31 @@ export function ProductDetailClient({ product }: { product: Product }) {
 
   const displayedImages = useMemo(() => {
     const variantImages = selectedVariant?.images ?? []
-    const sourceImages =
-      variantImages.length > 0
-        ? variantImages
-        : sharedImages.length > 0
-          ? sharedImages
-          : product.images
 
-    if (sourceImages.length > 0) {
-      return sourceImages.map((img) => img.url)
+    if (variantImages.length > 0) {
+      const urls = variantImages
+        .map((img) => img.url.trim())
+        .filter(Boolean)
+
+      return urls.length > 0 ? urls : ["/images/placeholder.png"]
     }
 
-    if (product.thumbnail_url) {
-      return [product.thumbnail_url]
-    }
+    const sourceImages = sharedImages.length > 0 ? sharedImages : product.images
+    const galleryUrls = sourceImages
+      .map((img) => img.url.trim())
+      .filter(Boolean)
 
-    return ["/images/placeholder.png"]
+    const thumbnailUrl = product.thumbnail_url?.trim()
+    const images = thumbnailUrl
+      ? [thumbnailUrl, ...galleryUrls.filter((url) => url !== thumbnailUrl)]
+      : galleryUrls
+
+    return images.length > 0 ? images : ["/images/placeholder.png"]
   }, [product.images, product.thumbnail_url, selectedVariant, sharedImages])
+
+  useEffect(() => {
+    setCurrentIndex(0)
+  }, [selectedVariant?.id])
 
   const hasDiscount = product.sale_price && Number(product.sale_price) < Number(product.price)
   const baseCurrentPrice = hasDiscount ? Number(product.sale_price) : Number(product.price)
@@ -223,7 +231,6 @@ export function ProductDetailClient({ product }: { product: Product }) {
       ...prev,
       [key]: value,
     }))
-    setCurrentIndex(0)
     setAddMessage("")
   }
 
@@ -475,8 +482,10 @@ export function ProductDetailClient({ product }: { product: Product }) {
                   <p className="text-xs text-zinc-500">
                     Selected: <span className="font-semibold text-zinc-900">{selectedVariant.name}</span>
                   </p>
-                ) : variantSelectionRequired ? (
+                ) : variantSelectionRequired && optionKeys.some((key) => !selectedOptions[key]) ? (
                   <p className="text-xs text-amber-600">Please choose all variant options.</p>
+                ) : variantSelectionRequired ? (
+                  <p className="text-xs text-amber-600">This variant combination is unavailable. Please choose another option.</p>
                 ) : null}
               </div>
             ) : null}

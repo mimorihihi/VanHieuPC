@@ -152,7 +152,7 @@ export async function findMatchingProducts(keyword: string, limit = 5) {
       ...mapProductRow(product),
       matchScore: scoreProductMatch(product, keyword),
     }))
-    .filter((product) => product.matchScore > 0)
+    .filter((product) => product.matchScore >= 4)
     .sort((a, b) => b.matchScore - a.matchScore)
     .slice(0, limit)
     .map((product) => ({
@@ -193,6 +193,7 @@ function scoreRecommendedProduct(product: ProductRow, intent: ProductRecommendat
   let score = baseScore
 
   if (intent.category && category.includes(normalizeText(intent.category))) score += 18
+  if (intent.category && !category.includes(normalizeText(intent.category))) score -= 12
   if (intent.useCase && haystack.includes(normalizeText(intent.useCase))) score += 8
   if (product.stock > 0) score += 6
   if (intent.maxPrice && effectivePrice <= intent.maxPrice) score += 10
@@ -206,17 +207,16 @@ export async function recommendProducts(intent: ProductRecommendationIntent, lim
   const whereParts = ["p.is_active = true"]
   const params: Array<string | number> = []
 
-  if (intent.maxPrice) {
-    whereParts.push("COALESCE(p.sale_price, p.price) <= ?")
-    params.push(intent.maxPrice)
+  // Giữ ngân sách ở phần chấm điểm thay vì khóa cứng SQL để tránh trả rỗng khi không có sản phẩm đúng dải giá.
+
+  if (intent.category && normalizeText(intent.category) !== "workstation") {
+    whereParts.push("COALESCE(c.name, '') LIKE ?")
+    params.push(`%${intent.category}%`)
   }
 
-  if (intent.minPrice) {
-    whereParts.push("COALESCE(p.sale_price, p.price) >= ?")
-    params.push(intent.minPrice)
-  }
+  const shouldFilterByTerms = terms.length && !intent.category && !intent.useCase && !intent.minPrice && !intent.maxPrice
 
-  if (terms.length) {
+  if (shouldFilterByTerms) {
     whereParts.push(`(${terms
       .map(() => `(p.name LIKE ? OR COALESCE(br.name, '') LIKE ? OR COALESCE(c.name, '') LIKE ? OR COALESCE(p.short_description, '') LIKE ?)`)
       .join(" OR ")})`)
@@ -252,7 +252,7 @@ export async function recommendProducts(intent: ProductRecommendationIntent, lim
       ...mapProductRow(product),
       matchScore: scoreRecommendedProduct(product, intent),
     }))
-    .filter((product) => product.matchScore > 0)
+    .filter((product) => product.matchScore >= 6)
     .sort((a, b) => b.matchScore - a.matchScore)
     .slice(0, limit)
     .map((product) => ({

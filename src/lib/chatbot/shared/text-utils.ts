@@ -79,8 +79,14 @@ export function extractBudgetRange(message: string) {
     return budget
   }
 
-  const amountMatch = normalized.match(/(\d+(?:[.,]\d+)?)\s*(tr|trieu|m|million|k|nghin)?/)
+  const amountMatch =
+    normalized.match(/(\d+(?:[.,]\d+)?)\s*(tr|trieu|m|million|k|nghin)/) ??
+    normalized.match(/(\d+(?:[.,]\d+)?)\s*(vnd|dong)/) ??
+    normalized.match(/(\d+(?:[.,]\d+)?)/)
   if (!amountMatch) return budget
+
+  const hasPriceContext = /(gia|ngan sach|tam|khoang|duoi|tren|toi da|toi thieu|khong qua|trieu|vnd|dong)/.test(normalized)
+  if (!amountMatch[2] && !hasPriceContext) return budget
 
   const amount = parseVietnameseAmount(amountMatch[1], amountMatch[2])
   if (!amount) return budget

@@ -17,8 +17,9 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get("limit") ?? "20")
     const search = searchParams.get("search") ?? ""
 
-    const whereSql = search ? "WHERE p.name LIKE ?" : ""
-    const whereParams = search ? [`%${search}%`] : []
+    const searchTerm = search.trim()
+    const whereSql = searchTerm ? "WHERE p.name LIKE ? OR p.slug LIKE ? OR p.id LIKE ?" : ""
+    const whereParams = searchTerm ? [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`] : []
     const [productsRows, totalRows] = await Promise.all([
       query(
         `SELECT

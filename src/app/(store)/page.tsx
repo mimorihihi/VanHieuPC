@@ -149,10 +149,14 @@ async function getHomeCategories() {
 async function getHomeBrands() {
   try {
     const [result] = await query(
-      `SELECT id, name, slug, logo_url
-       FROM brands
-       WHERE is_active = true
-       ORDER BY name ASC`
+      `SELECT b.id, b.name, b.slug, b.logo_url
+       FROM brands b
+       WHERE b.is_active = true
+         AND b.logo_url IS NOT NULL
+         AND TRIM(b.logo_url) <> ''
+         AND LOWER(b.name) IN ('asus', 'corsair', 'gigabyte', 'msi', 'adata')
+       ORDER BY FIELD(LOWER(b.name), 'asus', 'corsair', 'gigabyte', 'msi', 'adata')
+       LIMIT 5`
     )
 
     const rows = result as HomeBrandRow[]

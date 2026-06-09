@@ -1,3 +1,4 @@
+import crypto from "node:crypto"
 import { execute, query } from "@/lib/db"
 import { NextRequest } from "next/server"
 
@@ -13,6 +14,18 @@ function serializeProduct(p: any) {
     price: p.price?.toString() ?? "0",
     sale_price: p.sale_price?.toString() ?? null,
     avg_rating: p.avg_rating?.toString() ?? "0",
+  }
+}
+
+function parseJsonObject(value: unknown) {
+  if (!value) return {}
+  if (typeof value !== "string") return value
+
+  try {
+    const parsed = JSON.parse(value)
+    return parsed && typeof parsed === "object" ? parsed : {}
+  } catch {
+    return {}
   }
 }
 
@@ -42,7 +55,7 @@ export async function GET(
     product.brand = product.brand_join_id
       ? { id: product.brand_join_id, name: product.brand_join_name }
       : null
-    product.specs = typeof product.specs === "string" ? JSON.parse(product.specs) : product.specs
+    product.specs = parseJsonObject(product.specs)
     const [images] = await query(
       "SELECT id, product_id, variant_id, url, sort_order FROM product_images WHERE product_id = ? ORDER BY sort_order ASC",
       [id]
@@ -54,10 +67,11 @@ export async function GET(
     product.images = images
     product.variants = variants.map((v: any) => ({
       ...v,
-      attributes: typeof v.attributes === "string" ? JSON.parse(v.attributes) : v.attributes,
+      attributes: parseJsonObject(v.attributes),
     }))
     return Response.json(serializeProduct(product))
   } catch (error) {
+    console.error("Admin product fetch error:", error)
     return Response.json({ error: "Failed" }, { status: 500 })
   }
 }
@@ -86,6 +100,21 @@ export async function PUT(
       general_images,
     } = body
 
+    const normalizedImages = Array.isArray(general_images)
+      ? general_images
+          .filter((image): image is ProductImageInput => !!image && typeof image === "object")
+          .map((image, index) => ({
+            url: image.url?.toString().trim() ?? "",
+            sort_order: Number(image.sort_order ?? index + 1),
+          }))
+          .filter((image) => image.url.length > 0)
+      : []
+
+    const normalizedThumbnailUrl =
+      typeof thumbnail_url === "string" && thumbnail_url.trim().length > 0
+        ? thumbnail_url.trim()
+        : normalizedImages[0]?.url ?? null
+
     await execute(
       `UPDATE products
        SET name = ?, slug = ?, description = ?, short_description = ?, price = ?, sale_price = ?, stock = ?,
@@ -99,7 +128,7 @@ export async function PUT(
         price,
         sale_price ?? null,
         stock,
-        thumbnail_url ?? null,
+        normalizedThumbnailUrl,
         category_id,
         brand_id ?? null,
         is_active,
@@ -108,16 +137,6 @@ export async function PUT(
         id,
       ]
     )
-
-    const normalizedImages = Array.isArray(general_images)
-      ? general_images
-          .filter((image): image is ProductImageInput => !!image && typeof image === "object")
-          .map((image, index) => ({
-            url: image.url?.toString().trim() ?? "",
-            sort_order: Number(image.sort_order ?? index + 1),
-          }))
-          .filter((image) => image.url.length > 0)
-      : []
 
     await execute("DELETE FROM product_images WHERE product_id = ? AND variant_id IS NULL", [id])
 

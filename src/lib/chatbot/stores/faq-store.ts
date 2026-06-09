@@ -48,7 +48,7 @@ export async function searchFaq(message: string) {
           score,
         }
       })
-      .filter((item) => item.score > 0)
+      .filter((item) => item.score >= 4)
       .sort((a, b) => b.score - a.score)
       .slice(0, 3)
 
@@ -61,7 +61,7 @@ export async function searchFaq(message: string) {
   } catch {
     return FAQ_FALLBACK.filter((item) => {
       const haystack = normalizeText(`${item.title} ${item.content} ${item.keywords}`)
-      return tokens.some((token) => token && haystack.includes(token))
+      return tokens.filter((token) => token && haystack.includes(token)).length >= 2
     }).slice(0, 3)
   }
 }
