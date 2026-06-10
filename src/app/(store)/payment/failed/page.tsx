@@ -35,14 +35,29 @@ export default function PaymentFailedPage() {
   }, [])
 
   const reasonMap: Record<string, string> = {
-    "invalid-signature": "Giao dịch không hợp lệ hoặc chữ ký thanh toán không khớp.",
-    "missing-order": "Thiếu mã đơn hàng trong phản hồi từ cổng thanh toán.",
-    "order-not-found": "Không tìm thấy đơn hàng tương ứng trong hệ thống.",
-    "invalid-payment-method": "Phương thức thanh toán của đơn hàng không khớp với VNPay.",
-    "invalid-amount": "Số tiền thanh toán trả về không khớp với tổng đơn hàng.",
+    "invalid-signature": "Giao dịch không thể xác thực an toàn. Vui lòng thử lại hoặc liên hệ cửa hàng để được hỗ trợ.",
+    "missing-order": "Cổng thanh toán chưa gửi đủ thông tin đơn hàng. Vui lòng lưu mã đơn và liên hệ cửa hàng để kiểm tra.",
+    "order-not-found": "Hệ thống chưa tìm thấy đơn hàng tương ứng. Vui lòng lưu mã đơn và liên hệ cửa hàng để được hỗ trợ.",
+    "invalid-payment-method": "Phương thức thanh toán của đơn hàng không khớp. Vui lòng chọn lại phương thức thanh toán phù hợp.",
+    "invalid-amount": "Số tiền thanh toán chưa khớp với tổng đơn hàng. Vui lòng không thanh toán lại ngay nếu tiền đã bị trừ.",
   }
 
-  const failureReason = reasonMap[reason] ?? (code ? `Cổng thanh toán trả về mã lỗi ${code}.` : "Giao dịch chưa được xác nhận thành công.")
+  const codeMap: Record<string, string> = {
+    "07": "Giao dịch có dấu hiệu cần kiểm tra thêm từ ngân hàng. Vui lòng liên hệ cửa hàng nếu tiền đã bị trừ.",
+    "09": "Thẻ hoặc tài khoản của bạn chưa được đăng ký dịch vụ thanh toán trực tuyến.",
+    "10": "Thông tin xác thực thanh toán chưa đúng. Vui lòng kiểm tra lại và thử lại sau.",
+    "11": "Giao dịch đã hết thời gian chờ thanh toán. Bạn có thể thực hiện lại nếu vẫn muốn mua hàng.",
+    "12": "Thẻ hoặc tài khoản của bạn đang bị khóa nên chưa thể thanh toán.",
+    "13": "Mã xác thực giao dịch chưa chính xác. Vui lòng kiểm tra lại thông tin từ ngân hàng.",
+    "24": "Bạn đã hủy giao dịch hoặc rời khỏi cổng thanh toán trước khi hoàn tất.",
+    "51": "Tài khoản của bạn không đủ số dư để hoàn tất thanh toán.",
+    "65": "Tài khoản đã vượt quá hạn mức thanh toán trong ngày.",
+    "75": "Ngân hàng thanh toán đang tạm thời bảo trì. Vui lòng thử lại sau.",
+    "79": "Bạn đã nhập sai thông tin xác thực quá nhiều lần. Vui lòng thử lại sau hoặc liên hệ ngân hàng.",
+    "99": "Giao dịch chưa hoàn tất do lỗi từ cổng thanh toán hoặc ngân hàng. Vui lòng thử lại sau.",
+  }
+
+  const failureReason = reasonMap[reason] ?? codeMap[code] ?? "Giao dịch chưa được xác nhận thành công. Vui lòng kiểm tra lại hoặc liên hệ cửa hàng nếu cần hỗ trợ."
 
   return (
     <PaymentStatusLayout

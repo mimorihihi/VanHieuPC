@@ -117,31 +117,17 @@ export function CategorySection({
 
         <div className="flex flex-col gap-4 lg:flex-row lg:gap-5">
           {featuredCard && (
-            <div className="rounded-2xl border border-zinc-200 bg-white p-2.5 shadow-[0_1px_0_rgba(0,0,0,0.02)] lg:w-[260px] lg:shrink-0">
-              <div className="relative h-full min-h-[248px] overflow-hidden rounded-[18px] bg-zinc-950 px-5 pb-5 pt-4 text-white">
-                <div className="absolute inset-0 bg-gradient-to-br from-black/15 via-black/45 to-black/75" />
-                <div className="absolute inset-0 opacity-30">
-                  {featuredCard.image.trim() ? (
-                    <img src={featuredCard.image.trim()} alt={featuredCard.title} className="h-full w-full object-cover" />
-                  ) : null}
-                </div>
-                <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/10 to-transparent" />
-                <div className="relative z-10 flex h-full flex-col justify-end">
-                  <div className="mb-2 text-[9px] font-bold uppercase tracking-[0.26em] text-white/65">
-                    Featured Collection
-                  </div>
-                  <h3 className="mb-4 whitespace-pre-line text-[24px] font-black uppercase leading-[0.95] tracking-tight">
-                    {featuredCard.title}
-                  </h3>
-                  <a
-                    href={featuredCard.href}
-                    className="inline-flex w-fit items-center rounded-full border border-white/25 bg-white px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-950 transition-transform transition-colors hover:-translate-y-0.5 hover:bg-zinc-100"
-                  >
-                    {featuredCard.buttonText}
-                  </a>
-                </div>
+            <Link
+              href={featuredCard.href}
+              className="block overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_1px_0_rgba(0,0,0,0.02)] transition-transform hover:-translate-y-0.5 lg:w-[260px] lg:shrink-0"
+              aria-label={featuredCard.title.replace(/\n/g, " ")}
+            >
+              <div className="relative h-full min-h-[248px] overflow-hidden rounded-2xl bg-zinc-100 lg:min-h-[252px]">
+                {featuredCard.image.trim() ? (
+                  <img src={featuredCard.image.trim()} alt={featuredCard.title.replace(/\n/g, " ")} className="h-full w-full object-cover brightness-110 saturate-105" />
+                ) : null}
               </div>
-            </div>
+            </Link>
           )}
 
           <div className="relative flex-1">

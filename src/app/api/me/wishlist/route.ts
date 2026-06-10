@@ -27,11 +27,21 @@ async function requireAuthUserId() {
   return authUser?.id ?? ""
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const userId = await requireAuthUserId()
     if (!userId) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const productId = req.nextUrl.searchParams.get("product_id")?.trim() ?? ""
+    if (productId) {
+      const [existingRows] = await query<RowDataPacket[]>(
+        "SELECT id FROM wishlists WHERE user_id = ? AND product_id = ? LIMIT 1",
+        [userId, productId]
+      )
+
+      return Response.json({ exists: existingRows.length > 0 })
     }
 
     const [rows] = await query<WishlistRow[]>(

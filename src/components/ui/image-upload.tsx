@@ -166,21 +166,22 @@ export function ImageUpload({
         }
 
         .img-upload-dropzone {
-          border: 2px dashed #374151;
+          border: 2px dashed #d4d4d8;
           border-radius: 12px;
           padding: 32px 20px;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition: border-color 0.2s, background 0.2s;
-          background: #0f1117;
+          transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+          background: #fafafa;
           min-height: 140px;
         }
         .img-upload-dropzone:hover,
         .img-upload-dropzone.drag-over {
-          border-color: #6366f1;
-          background: rgba(99, 102, 241, 0.06);
+          border-color: #60a5fa;
+          background: #eff6ff;
+          box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.14);
         }
         .img-upload-dropzone.uploading {
           pointer-events: none;
@@ -197,21 +198,22 @@ export function ImageUpload({
           width: 52px;
           height: 52px;
           border-radius: 50%;
-          background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+          background: #dbeafe;
+          border: 1px solid #bfdbfe;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #818cf8;
+          color: #2563eb;
           margin-bottom: 4px;
         }
         .img-upload-text {
           font-size: 14px;
-          color: #e2e8f0;
-          font-weight: 500;
+          color: #18181b;
+          font-weight: 600;
         }
         .img-upload-hint {
           font-size: 12px;
-          color: #6b7280;
+          color: #71717a;
         }
 
         .img-upload-loading {
@@ -219,7 +221,7 @@ export function ImageUpload({
           flex-direction: column;
           align-items: center;
           gap: 10px;
-          color: #818cf8;
+          color: #2563eb;
           font-size: 14px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -229,8 +231,8 @@ export function ImageUpload({
           position: relative;
           border-radius: 12px;
           overflow: hidden;
-          border: 1px solid #1f2937;
-          background: #0f1117;
+          border: 1px solid #e4e4e7;
+          background: #fafafa;
         }
         .img-upload-img {
           width: 100%;
@@ -244,7 +246,7 @@ export function ImageUpload({
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.6);
+          background: rgba(24, 24, 27, 0.42);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -256,9 +258,9 @@ export function ImageUpload({
           opacity: 1;
         }
         .img-upload-remove {
-          background: rgba(239, 68, 68, 0.8);
-          border: none;
-          color: #fff;
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          color: #b91c1c;
           width: 36px;
           height: 36px;
           border-radius: 50%;
@@ -266,34 +268,35 @@ export function ImageUpload({
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition: background 0.15s;
+          transition: background 0.15s, border-color 0.15s;
         }
         .img-upload-remove:hover {
-          background: #ef4444;
+          background: #fee2e2;
+          border-color: #fca5a5;
         }
         .img-upload-change {
-          background: rgba(99, 102, 241, 0.8);
-          border: none;
+          background: #2563eb;
+          border: 1px solid #2563eb;
           color: #fff;
           padding: 8px 16px;
           border-radius: 8px;
           font-size: 13px;
-          font-weight: 500;
+          font-weight: 600;
           cursor: pointer;
           transition: background 0.15s;
         }
         .img-upload-change:hover {
-          background: #6366f1;
+          background: #1d4ed8;
         }
         .img-upload-url {
           padding: 8px 12px;
           font-size: 11px;
-          color: #6b7280;
+          color: #71717a;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          background: #0a0d14;
-          border-top: 1px solid #1f2937;
+          background: #f4f4f5;
+          border-top: 1px solid #e4e4e7;
         }
 
 
@@ -305,14 +308,14 @@ export function ImageUpload({
         .img-upload-url-icon {
           position: absolute;
           left: 10px;
-          color: #4b5563;
+          color: #71717a;
           pointer-events: none;
         }
         .img-upload-url-input {
           width: 100%;
-          background: #0f1117;
-          border: 1px solid #374151;
-          color: #e2e8f0;
+          background: #fff;
+          border: 1px solid #d4d4d8;
+          color: #18181b;
           border-radius: 8px;
           padding: 8px 10px 8px 30px;
           font-size: 13px;
@@ -320,20 +323,20 @@ export function ImageUpload({
         }
         .img-upload-url-input:focus {
           outline: none;
-          border-color: #6366f1;
-          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+          border-color: #60a5fa;
+          box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.18);
         }
         .img-upload-url-input::placeholder {
-          color: #4b5563;
+          color: #a1a1aa;
         }
 
         .img-upload-error {
           font-size: 13px;
-          color: #f87171;
-          background: rgba(239, 68, 68, 0.1);
+          color: #b91c1c;
+          background: #fef2f2;
           padding: 8px 12px;
           border-radius: 8px;
-          border: 1px solid rgba(239, 68, 68, 0.2);
+          border: 1px solid #fecaca;
         }
       `}</style>
     </>

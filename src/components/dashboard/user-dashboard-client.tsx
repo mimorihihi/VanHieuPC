@@ -432,7 +432,7 @@ export function UserDashboardClient() {
       const response = await fetch("/api/me/wishlist", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: user.id, product_id: productId }),
+        body: JSON.stringify({ product_id: productId }),
       })
       if (response.ok) {
         setWishlist((prev) => prev.filter((item) => item.product_id !== productId))

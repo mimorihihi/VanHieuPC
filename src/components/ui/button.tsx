@@ -13,9 +13,9 @@ interface AdminBtnProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<Variant, string> = {
-  primary: "border border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800",
-  secondary: "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100",
-  danger: "border border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-700",
+  primary: "border border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-100 hover:bg-blue-700",
+  secondary: "border border-zinc-300 bg-white text-zinc-800 hover:border-zinc-400 hover:bg-zinc-50",
+  danger: "border border-red-200 bg-red-50 text-red-700 hover:border-red-300 hover:bg-red-100",
   ghost: "border border-transparent bg-transparent text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
 }
 

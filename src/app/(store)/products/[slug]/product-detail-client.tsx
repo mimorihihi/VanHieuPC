@@ -100,6 +100,8 @@ export function ProductDetailClient({ product }: { product: Product }) {
   const [reviewCount, setReviewCount] = useState(0)
   const [reviewAvg, setReviewAvg] = useState(product.avg_rating)
   const [isLoadingReviews, setIsLoadingReviews] = useState(true)
+  const [isWishlisted, setIsWishlisted] = useState(false)
+  const [isWishlistLoading, setIsWishlistLoading] = useState(false)
 
   const availableVariants = useMemo(
     () => product.variants.filter((variant) => variant.is_active),
@@ -226,6 +228,61 @@ export function ProductDetailClient({ product }: { product: Product }) {
     void loadReviews()
   }, [product.slug])
 
+  useEffect(() => {
+    let cancelled = false
+
+    void (async () => {
+      try {
+        const response = await fetch(`/api/me/wishlist?product_id=${encodeURIComponent(product.id)}`, {
+          cache: "no-store",
+        })
+
+        if (cancelled) return
+
+        if (response.status === 401) {
+          setIsWishlisted(false)
+          return
+        }
+
+        if (!response.ok) return
+
+        const data = (await response.json()) as { exists?: boolean }
+        setIsWishlisted(Boolean(data.exists))
+      } catch {
+        if (!cancelled) {
+          setIsWishlisted(false)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [product.id])
+
+  const handleToggleWishlist = async () => {
+    if (isWishlistLoading) return
+
+    setIsWishlistLoading(true)
+    try {
+      const response = await fetch("/api/me/wishlist", {
+        method: isWishlisted ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: product.id }),
+      })
+
+      if (response.status === 401) {
+        router.push(`/login?redirect=/products/${product.slug}`)
+        return
+      }
+
+      if (!response.ok) return
+
+      setIsWishlisted((current) => !current)
+    } finally {
+      setIsWishlistLoading(false)
+    }
+  }
 
   const handleSelectOption = (key: string, value: string) => {
     setSelectedOptions((prev) => ({
@@ -519,8 +576,19 @@ export function ProductDetailClient({ product }: { product: Product }) {
 
           <div className="flex flex-col items-center justify-center border-l border-zinc-200 bg-white py-10">
             <div className="mb-4 flex flex-col gap-2 self-start pl-2 lg:pl-0">
-              <button className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-zinc-300 text-zinc-500 hover:bg-zinc-100">
-                <Heart className="h-4 w-4" />
+              <button
+                type="button"
+                onClick={() => void handleToggleWishlist()}
+                disabled={isWishlistLoading}
+                aria-label={isWishlisted ? "Xoá khỏi yêu thích" : "Thêm vào yêu thích"}
+                className={cn(
+                  "inline-flex h-7 w-7 items-center justify-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+                  isWishlisted
+                    ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
+                    : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
+                )}
+              >
+                <Heart className={cn("h-4 w-4", isWishlisted && "fill-current")} />
               </button>
               <button className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-zinc-300 text-zinc-500 hover:bg-zinc-100">
                 <BarChart3 className="h-4 w-4" />
@@ -598,65 +666,41 @@ export function ProductDetailClient({ product }: { product: Product }) {
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
-            <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
-              <h3 className="text-sm font-bold text-zinc-900">Đánh giá sau khi hoàn tất đơn hàng</h3>
-              <p className="mt-2 text-xs leading-5 text-zinc-500">
-                Để đảm bảo đánh giá đến từ khách đã mua hàng, bạn hãy vào Dashboard, mở đơn hàng đã hoàn tất rồi đánh giá từng sản phẩm trong chi tiết đơn.
-              </p>
-
-              <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4 text-xs leading-6 text-zinc-600">
-                <p className="font-semibold text-zinc-900">Flow đánh giá:</p>
-                <p className="mt-2">1. User Dashboard</p>
-                <p>2. Đơn hàng của tôi</p>
-                <p>3. Chi tiết đơn hàng đã hoàn tất</p>
-                <p>4. Đánh giá sản phẩm</p>
-              </div>
-
-              <a
-                href="/dashboard?tab=orders"
-                className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-full bg-blue-600 px-5 text-xs font-semibold text-white transition hover:bg-blue-700"
-              >
-                Vào đơn hàng của tôi
-              </a>
-            </div>
-
-            <div className="space-y-3">
-              {isLoadingReviews ? (
-                <div className="rounded-3xl border border-zinc-200 p-5 text-sm text-zinc-500">Đang tải đánh giá...</div>
-              ) : reviews.length > 0 ? (
-                reviews.map((review) => (
-                  <article key={review.id} className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <h3 className="text-sm font-bold text-zinc-900">
-                          {review.user_name} {review.isMine ? <span className="text-xs font-medium text-blue-600">(Bạn)</span> : null}
-                        </h3>
-                        <p className="text-xs text-zinc-400">{new Date(review.created_at).toLocaleDateString("vi-VN")}</p>
-                      </div>
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={cn(
-                              "h-4 w-4",
-                              i < review.rating ? "fill-yellow-400 text-yellow-400" : "fill-zinc-300 text-zinc-300",
-                            )}
-                          />
-                        ))}
-                      </div>
+          <div className="space-y-3">
+            {isLoadingReviews ? (
+              <div className="rounded-3xl border border-zinc-200 p-5 text-sm text-zinc-500">Đang tải đánh giá...</div>
+            ) : reviews.length > 0 ? (
+              reviews.map((review) => (
+                <article key={review.id} className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-zinc-900">
+                        {review.user_name} {review.isMine ? <span className="text-xs font-medium text-blue-600">(Bạn)</span> : null}
+                      </h3>
+                      <p className="text-xs text-zinc-400">{new Date(review.created_at).toLocaleDateString("vi-VN")}</p>
                     </div>
-                    <p className="whitespace-pre-line text-sm leading-6 text-zinc-700">
-                      {review.comment || "Khách hàng chưa để lại nhận xét chi tiết."}
-                    </p>
-                  </article>
-                ))
-              ) : (
-                <div className="rounded-3xl border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center text-sm text-zinc-500">
-                  Chưa có nhận xét nào cho sản phẩm này.
-                </div>
-              )}
-            </div>
+                    <div className="flex items-center">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={cn(
+                            "h-4 w-4",
+                            i < review.rating ? "fill-yellow-400 text-yellow-400" : "fill-zinc-300 text-zinc-300",
+                          )}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="whitespace-pre-line text-sm leading-6 text-zinc-700">
+                    {review.comment || "Khách hàng chưa để lại nhận xét chi tiết."}
+                  </p>
+                </article>
+              ))
+            ) : (
+              <div className="rounded-3xl border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center text-sm text-zinc-500">
+                Chưa có nhận xét nào cho sản phẩm này.
+              </div>
+            )}
           </div>
         </div>
       </section>

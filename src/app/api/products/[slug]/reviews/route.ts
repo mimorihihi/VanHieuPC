@@ -46,10 +46,11 @@ export async function GET(
 
     const authUser = await getAuthUser()
     const [rows] = await query<ReviewRow[]>(
-      `SELECT r.id, r.product_id, r.user_id, r.rating, r.comment, r.created_at, u.name AS user_name
+      `SELECT r.id, r.product_id, r.user_id, r.rating, r.comment, r.status, r.created_at, u.name AS user_name
        FROM reviews r
        LEFT JOIN users u ON u.id = r.user_id
        WHERE r.product_id = ?
+         AND COALESCE(r.status, 'APPROVED') != 'HIDDEN'
        ORDER BY r.created_at DESC`,
       [product.id]
     )
