@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   ChevronRight,
@@ -168,6 +168,7 @@ async function loadAuthUser() {
 
 export function UserDashboardClient() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [user, setUser] = useState<AuthUser | null>(null)
   const [ready, setReady] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -178,7 +179,10 @@ export function UserDashboardClient() {
   const [savingReviewKey, setSavingReviewKey] = useState("")
   const [retryingPaymentId, setRetryingPaymentId] = useState("")
   const [reviewForms, setReviewForms] = useState<Record<string, { rating: number; comment: string }>>({})
-  const [activeTab, setActiveTab] = useState<DashboardTab>("overview")
+  const initialTab = searchParams.get("tab")
+  const [activeTab, setActiveTab] = useState<DashboardTab>(
+    tabs.some((item) => item.id === initialTab) ? (initialTab as DashboardTab) : "overview"
+  )
   const [error, setError] = useState("")
 
   const [profileForm, setProfileForm] = useState<ProfileForm>({
@@ -277,6 +281,12 @@ export function UserDashboardClient() {
       await loadDashboard(auth.id)
     })()
   }, [router, loadDashboard])
+  useEffect(() => {
+    const tab = searchParams.get("tab")
+    if (tabs.some((item) => item.id === tab)) {
+      setActiveTab(tab as DashboardTab)
+    }
+  }, [searchParams])
 
 
 
