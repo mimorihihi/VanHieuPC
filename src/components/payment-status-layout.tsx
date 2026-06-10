@@ -88,33 +88,35 @@ export function PaymentStatusLayout({
               styles.cardShadow
             )}
           >
-            <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="grid min-w-0 gap-0 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)]">
               <div className={cn("border-b p-8 lg:border-b-0 lg:p-12", styles.cardBorder, styles.contentDivider)}>
-                <div className={cn("inline-flex items-center rounded-full border px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em]", styles.badge)}>
-                  <BadgeIcon className="mr-2 h-4 w-4" />
+                <div className={cn("inline-flex max-w-full flex-wrap items-center gap-y-1 rounded-full border px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em]", styles.badge)}>
+                  <BadgeIcon className="mr-2 h-4 w-4 shrink-0" />
                   {badgeLabel}
                 </div>
 
-                <h1 className="mt-6 text-4xl font-semibold tracking-tight text-zinc-950 lg:text-5xl">{title}</h1>
+                <h1 className="mt-6 break-words text-3xl font-semibold tracking-tight text-zinc-950 sm:text-4xl lg:text-5xl">{title}</h1>
 
-                <div className="mt-4 max-w-2xl text-base leading-8 text-zinc-600">{description}</div>
+                <div className="mt-4 max-w-2xl break-words text-base leading-8 text-zinc-600">{description}</div>
 
                 <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                  <div className={cn("rounded-2xl border p-4", styles.orderCard)}>
+                  <div className={cn("min-w-0 overflow-hidden rounded-2xl border p-4", styles.orderCard)}>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-700">Mã đơn hàng</p>
-                    <p className="mt-2 text-lg font-semibold text-zinc-900">{orderNumber}</p>
+                    <p className="mt-2 block max-w-full whitespace-normal break-all text-base font-semibold leading-6 text-zinc-900 sm:text-lg">
+                      {orderNumber}
+                    </p>
                   </div>
-                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                  <div className="min-w-0 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Trạng thái hiện tại</p>
-                    <p className="mt-2 text-lg font-semibold text-zinc-900">{statusLabel}</p>
+                    <p className="mt-2 break-words text-lg font-semibold text-zinc-900">{statusLabel}</p>
                   </div>
                 </div>
 
                 <div className="mt-8 space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
                   {timeline.map((item) => (
                     <div key={item} className="flex items-start gap-3">
-                      <div className={cn("mt-1 h-2.5 w-2.5 rounded-full", styles.timelineDot)} />
-                      <p className="text-sm leading-6 text-zinc-600">{item}</p>
+                      <div className={cn("mt-1 h-2.5 w-2.5 shrink-0 rounded-full", styles.timelineDot)} />
+                      <p className="min-w-0 break-words text-sm leading-6 text-zinc-600">{item}</p>
                     </div>
                   ))}
                 </div>
@@ -129,7 +131,7 @@ export function PaymentStatusLayout({
                         key={`${action.href}-${action.label}`}
                         href={action.href}
                         className={cn(
-                          "inline-flex h-12 items-center justify-center rounded-full px-6 text-sm font-semibold transition-all duration-200",
+                          "inline-flex min-h-12 w-full items-center justify-center rounded-full px-6 py-3 text-center text-sm font-semibold leading-5 transition-all duration-200 sm:w-auto",
                           isPrimary
                             ? "bg-zinc-950 text-white hover:-translate-y-0.5 hover:bg-zinc-800"
                             : "border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
@@ -143,7 +145,7 @@ export function PaymentStatusLayout({
                 </div>
               </div>
 
-              <div className={cn("flex items-center justify-center p-8 lg:p-12", styles.panelBackground)}>
+              <div className={cn("flex min-w-0 items-center justify-center p-6 sm:p-8 lg:p-12", styles.panelBackground)}>
                 <div className={cn("w-full max-w-sm rounded-[28px] border p-6 text-center backdrop-blur", styles.panelCard)}>
                   <div className={cn("mx-auto flex h-36 w-36 items-center justify-center rounded-full", styles.panelVisual)}>
                     {animationData ? (
@@ -152,8 +154,8 @@ export function PaymentStatusLayout({
                       <PanelIcon className="h-16 w-16" />
                     ) : null}
                   </div>
-                  <h2 className="mt-5 text-2xl font-semibold text-zinc-900">{panelTitle}</h2>
-                  <p className="mt-3 text-sm leading-7 text-zinc-600">{panelDescription}</p>
+                  <h2 className="mt-5 break-words text-2xl font-semibold text-zinc-900">{panelTitle}</h2>
+                  <p className="mt-3 break-words text-sm leading-7 text-zinc-600">{panelDescription}</p>
                 </div>
               </div>
             </div>

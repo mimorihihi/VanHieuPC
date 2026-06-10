@@ -41,6 +41,8 @@ type OrderSummary = {
   order_number: string
   status: string
   payment_status: string
+  payment_method: string
+  checkout_option?: string | null
   subtotal: string
   shipping_fee: string
   discount: string
@@ -174,6 +176,7 @@ export function UserDashboardClient() {
   const [removingWishlistId, setRemovingWishlistId] = useState("")
   const [loadingOrderId, setLoadingOrderId] = useState("")
   const [savingReviewKey, setSavingReviewKey] = useState("")
+  const [retryingPaymentId, setRetryingPaymentId] = useState("")
   const [reviewForms, setReviewForms] = useState<Record<string, { rating: number; comment: string }>>({})
   const [activeTab, setActiveTab] = useState<DashboardTab>("overview")
   const [error, setError] = useState("")
@@ -342,6 +345,31 @@ export function UserDashboardClient() {
       }
     } finally {
       setLoadingOrderId("")
+    }
+  }
+
+  const handleRetryPayment = async (orderId: string) => {
+    setRetryingPaymentId(orderId)
+    setError("")
+
+    try {
+      const response = await fetch("/api/payment/retry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order_id: orderId }),
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error ?? "Unable to retry payment.")
+        return
+      }
+
+      if (typeof data.paymentUrl === "string" && data.paymentUrl.trim()) {
+        window.location.href = data.paymentUrl
+      }
+    } finally {
+      setRetryingPaymentId("")
     }
   }
 
@@ -663,16 +691,28 @@ export function UserDashboardClient() {
                               <span className="text-sm font-semibold text-zinc-900">{formatMoney(order.total)} đ</span>
                             </div>
                           </div>
-                          <div className="mt-4 flex items-center justify-between gap-3 text-xs text-zinc-500">
-                            <span>Payment: {order.payment_status}</span>
-                            <button
-                              onClick={() => void handleOpenOrder(order.id)}
-                              className="inline-flex items-center gap-1 font-semibold text-blue-600 hover:underline"
-                            >
-                              {loadingOrderId === order.id ? "Loading..." : "View details"}
-                              <ChevronRight className="h-3 w-3" />
-                            </button>
-                          </div>
+                           <div className="mt-4 flex flex-col gap-3 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
+                             <span>Payment: {order.payment_status}</span>
+                             <div className="flex flex-wrap items-center gap-3">
+                               {order.payment_method === "VNPAY" && order.payment_status !== "PAID" ? (
+                                 <button
+                                   type="button"
+                                   onClick={() => void handleRetryPayment(order.id)}
+                                   disabled={retryingPaymentId === order.id}
+                                   className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                                 >
+                                   {retryingPaymentId === order.id ? "Đang mở thanh toán..." : "Thanh toán lại"}
+                                 </button>
+                               ) : null}
+                               <button
+                                 onClick={() => void handleOpenOrder(order.id)}
+                                 className="inline-flex items-center gap-1 font-semibold text-blue-600 hover:underline"
+                               >
+                                 {loadingOrderId === order.id ? "Loading..." : "View details"}
+                                 <ChevronRight className="h-3 w-3" />
+                               </button>
+                             </div>
+                           </div>
                         </div>
                       ))
                     )}

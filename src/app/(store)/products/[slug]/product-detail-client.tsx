@@ -95,6 +95,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
   const [isAdding, setIsAdding] = useState(false)
   const [addMessage, setAddMessage] = useState("")
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
+  const [showVariantPrompt, setShowVariantPrompt] = useState(false)
   const [reviews, setReviews] = useState<ProductReview[]>([])
   const [reviewCount, setReviewCount] = useState(0)
   const [reviewAvg, setReviewAvg] = useState(product.avg_rating)
@@ -231,6 +232,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
       ...prev,
       [key]: value,
     }))
+    setShowVariantPrompt(false)
     setAddMessage("")
   }
 
@@ -239,7 +241,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
     setAddMessage("")
 
     if (!isVariantSelectionComplete) {
-      setAddMessage("Please choose a variant before adding to cart.")
+      setShowVariantPrompt(true)
       return
     }
 
@@ -363,7 +365,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
             </div>
             <button
               onClick={handleAddToCart}
-              disabled={isAdding || currentStock <= 0 || !isVariantSelectionComplete}
+              disabled={isAdding || currentStock <= 0}
               className="inline-flex h-10 items-center rounded-full bg-blue-600 px-6 text-xs font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <ShoppingCart className="mr-2 h-4 w-4" />
@@ -482,9 +484,9 @@ export function ProductDetailClient({ product }: { product: Product }) {
                   <p className="text-xs text-zinc-500">
                     Selected: <span className="font-semibold text-zinc-900">{selectedVariant.name}</span>
                   </p>
-                ) : variantSelectionRequired && optionKeys.some((key) => !selectedOptions[key]) ? (
+                ) : showVariantPrompt && variantSelectionRequired && optionKeys.some((key) => !selectedOptions[key]) ? (
                   <p className="text-xs text-amber-600">Please choose all variant options.</p>
-                ) : variantSelectionRequired ? (
+                ) : showVariantPrompt && variantSelectionRequired ? (
                   <p className="text-xs text-amber-600">This variant combination is unavailable. Please choose another option.</p>
                 ) : null}
               </div>
