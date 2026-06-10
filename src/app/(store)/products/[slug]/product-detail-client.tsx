@@ -253,7 +253,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
       user = null
     }
 
-    if (!isAuthUser(user)) {
+    const saveGuestCart = () => {
       try {
         const rawGuest = window.localStorage.getItem("cart_guest_v1")
         const guestItems = rawGuest ? (JSON.parse(rawGuest) as GuestCartItem[]) : []
@@ -281,9 +281,15 @@ export function ProductDetailClient({ product }: { product: Product }) {
 
         window.localStorage.setItem("cart_guest_v1", JSON.stringify(guestItems))
         setAddMessage("Added to cart.")
+        return true
       } catch {
         setAddMessage("Cannot save guest cart.")
+        return false
       }
+    }
+
+    if (!isAuthUser(user)) {
+      saveGuestCart()
       return
     }
     const userId = user.id
@@ -304,6 +310,12 @@ export function ProductDetailClient({ product }: { product: Product }) {
 
         const data = await response.json()
         if (!response.ok) {
+          if (response.status === 401) {
+            window.localStorage.removeItem("auth_user")
+            saveGuestCart()
+            return
+          }
+
           setAddMessage(data.error ?? "Add to cart failed.")
           return
         }
