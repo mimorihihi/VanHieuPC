@@ -1,7 +1,8 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { ArrowLeft, Package, TriangleAlert } from "lucide-react"
+import { ArrowLeft, Package, ShoppingCart, TriangleAlert } from "lucide-react"
 import { PaymentStatusLayout } from "@/components/payment-status-layout"
 
 export default function PaymentFailedPage() {
@@ -10,6 +11,28 @@ export default function PaymentFailedPage() {
 
   const reason = searchParams.get("reason")?.trim() || ""
   const code = searchParams.get("code")?.trim() || ""
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  useEffect(() => {
+    let mounted = true
+
+    void (async () => {
+      try {
+        const response = await fetch("/api/me", { cache: "no-store" })
+        if (mounted) {
+          setIsAuthenticated(response.ok)
+        }
+      } catch {
+        if (mounted) {
+          setIsAuthenticated(false)
+        }
+      }
+    })()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const reasonMap: Record<string, string> = {
     "invalid-signature": "Giao dịch không hợp lệ hoặc chữ ký thanh toán không khớp.",
@@ -37,25 +60,48 @@ export default function PaymentFailedPage() {
       statusLabel={code ? `Thanh toán lỗi · Mã ${code}` : "Chờ thanh toán / cần kiểm tra"}
       timeline={[
         failureReason,
+        isAuthenticated
+          ? "Bạn có thể mở trang đơn hàng để kiểm tra lại trạng thái và thanh toán lại nếu cần."
+          : "Nếu bạn thanh toán với tư cách khách, hãy lưu lại mã đơn hàng để cửa hàng hỗ trợ kiểm tra giao dịch.",
         "Nếu tiền đã bị trừ nhưng trạng thái chưa cập nhật, hãy liên hệ cửa hàng để được hỗ trợ nhanh hơn.",
-        "Bạn có thể xem lại thông tin đơn hàng trong tài khoản cá nhân bất cứ lúc nào.",
       ]}
-      actions={[
-        {
-          href: "/dashboard?tab=orders",
-          label: "Xem đơn hàng",
-          icon: Package,
-          variant: "primary",
-        },
-        {
-          href: "/",
-          label: "Tiếp tục mua sắm",
-          icon: ArrowLeft,
-          variant: "secondary",
-        },
-      ]}
+      actions={
+        isAuthenticated
+          ? [
+              {
+                href: "/dashboard?tab=orders",
+                label: "Xem đơn hàng",
+                icon: Package,
+                variant: "primary",
+              },
+              {
+                href: "/products",
+                label: "Tiếp tục mua sắm",
+                icon: ShoppingCart,
+                variant: "secondary",
+              },
+            ]
+          : [
+              {
+                href: "/",
+                label: "Về trang chủ",
+                icon: ArrowLeft,
+                variant: "primary",
+              },
+              {
+                href: "/products",
+                label: "Tiếp tục mua sắm",
+                icon: ShoppingCart,
+                variant: "secondary",
+              },
+            ]
+      }
       panelTitle="Giao dịch cần được kiểm tra"
-      panelDescription="Đừng lo, đơn hàng vẫn có thể được lưu lại. Hãy thử lại hoặc kiểm tra với bộ phận hỗ trợ để tiếp tục nhanh chóng."
+      panelDescription={
+        isAuthenticated
+          ? "Bạn có thể kiểm tra đơn hàng trong tài khoản và thanh toán lại đúng đơn nếu giao dịch chưa hoàn tất."
+          : "Đơn hàng có thể vẫn được lưu lại. Vui lòng lưu mã đơn hàng và liên hệ cửa hàng nếu cần kiểm tra hoặc hỗ trợ thanh toán lại."
+      }
       panelIcon={TriangleAlert}
     />
   )
