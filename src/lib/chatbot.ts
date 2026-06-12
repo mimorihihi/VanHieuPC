@@ -2,6 +2,7 @@ export {
   getChatHistory,
   getChatSessions,
   handleChatbotMessage,
+  handleChatbotMessageStream,
 } from "./chatbot/index"
 
 export type {

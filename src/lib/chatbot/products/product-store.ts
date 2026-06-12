@@ -3,10 +3,35 @@ import { findProductByName } from "./product-recommendation"
 import type { ProductDetailRow, ProductVariantRow } from "../shared/types"
 
 export async function getProductDetail(keyword: string) {
-  const matchedProduct = await findProductByName(keyword)
+  const cleanKeyword = keyword.trim()
+  if (!cleanKeyword) return null
+
+  const [exactRows] = await query<ProductDetailRow[]>(
+    `SELECT
+       p.id,
+       p.name,
+       p.slug,
+       p.short_description,
+       p.description,
+       p.price,
+       p.sale_price,
+       p.stock,
+       p.thumbnail_url,
+       c.name AS category_name,
+       b.name AS brand_name
+     FROM products p
+     LEFT JOIN categories c ON c.id = p.category_id
+     LEFT JOIN brands b ON b.id = p.brand_id
+     WHERE p.is_active = true
+       AND (LOWER(p.name) = LOWER(?) OR p.slug = ?)
+     LIMIT 1`,
+    [cleanKeyword, cleanKeyword]
+  )
+
+  const matchedProduct = exactRows[0] ?? await findProductByName(cleanKeyword)
   if (!matchedProduct) return null
 
-  const [rows] = await query<ProductDetailRow[]>(
+  const product = exactRows[0] ?? (await query<ProductDetailRow[]>(
     `SELECT
        p.id,
        p.name,
@@ -25,9 +50,8 @@ export async function getProductDetail(keyword: string) {
      WHERE p.id = ?
      LIMIT 1`,
     [matchedProduct.id]
-  )
+  ))[0][0]
 
-  const product = rows[0]
   if (!product) return null
 
   const [variantRows] = await query<ProductVariantRow[]>(

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Bot, Clock3, MessageSquare, Search, ShoppingCart, Sparkles, X, Send, Package } from "lucide-react"
+import { Bot, Clock3, MessageSquare, ShoppingCart, Sparkles, X, Send, Package } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -9,25 +9,25 @@ const QUICK_ACTIONS = [
   {
     id: "faq-shipping",
     label: "Chính sách giao hàng",
-    message: "Shop có giao hàng toàn quốc không?",
+    message: "FAQ: Chính sách giao hàng của shop như thế nào? Shop có giao hàng toàn quốc không?",
     icon: Package,
   },
   {
     id: "faq-payment",
     label: "Hướng dẫn thanh toán",
-    message: "Shop hỗ trợ thanh toán như thế nào?",
+    message: "FAQ: Hướng dẫn thanh toán của shop như thế nào? Shop hỗ trợ COD hoặc checkout ra sao?",
     icon: Sparkles,
   },
   {
     id: "faq-return",
     label: "Chính sách đổi trả",
-    message: "Chính sách đổi trả hoặc bảo hành của shop như thế nào?",
+    message: "FAQ: Chính sách đổi trả của shop như thế nào? Khi nào được đổi trả hoặc hoàn tiền?",
     icon: MessageSquare,
   },
   {
     id: "faq-warranty",
     label: "Chính sách bảo hành",
-    message: "Chính sách bảo hành của shop như thế nào?",
+    message: "FAQ: Chính sách bảo hành của shop như thế nào?",
     icon: ShoppingCart,
   },
 ] as const
@@ -131,9 +131,6 @@ export function ChatbotWidget() {
     return isOpen ? "Đang hỗ trợ" : "Sẵn sàng tư vấn"
   }, [isLoadingHistory, isOpen])
 
-  const appendAssistantMessage = (message: ChatMessage) => {
-    setMessages((prev) => [...prev, message])
-  }
 
   const sendMessage = async (messageText: string) => {
     const trimmed = messageText.trim()
@@ -141,12 +138,20 @@ export function ChatbotWidget() {
 
     setIsOpen(true)
     setIsSending(true)
+
+    const assistantMessageId = crypto.randomUUID()
+
     setMessages((prev) => [
       ...prev,
       {
         id: crypto.randomUUID(),
         role: "user",
         content: trimmed,
+      },
+      {
+        id: assistantMessageId,
+        role: "assistant",
+        content: "",
       },
     ])
 
@@ -164,31 +169,74 @@ export function ChatbotWidget() {
         body: JSON.stringify(body),
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || "Không thể xử lý yêu cầu lúc này.")
+        const errorText = await response.text()
+        throw new Error(errorText || "Không thể xử lý yêu cầu lúc này.")
       }
 
-      if (typeof data.sessionId === "string" && data.sessionId) {
-        setSessionId(data.sessionId)
-        window.localStorage.setItem(CHATBOT_SESSION_KEY, data.sessionId)
+      const nextSessionId = response.headers.get("x-chat-session-id")
+      if (nextSessionId) {
+        setSessionId(nextSessionId)
+        window.localStorage.setItem(CHATBOT_SESSION_KEY, nextSessionId)
       }
 
-      appendAssistantMessage({
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: data.reply,
-      })
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error("Không thể đọc phản hồi từ chatbot.")
+      }
+
+      const decoder = new TextDecoder()
+      let streamedContent = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        streamedContent += decoder.decode(value, { stream: true })
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === assistantMessageId
+              ? { ...message, content: streamedContent }
+              : message
+          )
+        )
+      }
+
+      const finalChunk = decoder.decode()
+      if (finalChunk) {
+        streamedContent += finalChunk
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === assistantMessageId
+              ? { ...message, content: streamedContent }
+              : message
+          )
+        )
+      }
+
+      if (!streamedContent.trim()) {
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === assistantMessageId
+              ? { ...message, content: "Mình chưa tạo được phản hồi phù hợp. Bạn vui lòng thử lại nhé." }
+              : message
+          )
+        )
+      }
     } catch (error) {
-      appendAssistantMessage({
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content:
-          error instanceof Error
-            ? error.message
-            : "Hệ thống đang bận, bạn vui lòng thử lại sau.",
-      })
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === assistantMessageId
+            ? {
+                ...message,
+                content:
+                  error instanceof Error
+                    ? error.message
+                    : "Hệ thống đang bận, bạn vui lòng thử lại sau.",
+              }
+            : message
+        )
+      )
     } finally {
       setIsSending(false)
     }

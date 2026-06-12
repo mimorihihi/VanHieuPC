@@ -1,5 +1,5 @@
 import { query } from "@/lib/db"
-import { extractBudgetRange } from "../shared/text-utils"
+import { extractBudgetRange, normalizeText } from "../shared/text-utils"
 import type { ChatMessageRow, ChatbotToolName } from "../shared/types"
 
 type ProductContextItem = {
@@ -23,6 +23,7 @@ export type ChatContext = {
   lastProducts?: ProductContextItem[]
   lastMinPrice?: number
   lastMaxPrice?: number
+  lastUseCase?: string
 }
 
 function parseMetadata(metadata: unknown): StoredChatMetadata | null {
@@ -50,8 +51,31 @@ function mergeContext(base: ChatContext, next?: ChatContext) {
   if (next.lastProducts?.length) merged.lastProducts = next.lastProducts
   if (typeof next.lastMinPrice === "number") merged.lastMinPrice = next.lastMinPrice
   if (typeof next.lastMaxPrice === "number") merged.lastMaxPrice = next.lastMaxPrice
+  if (next.lastUseCase) merged.lastUseCase = next.lastUseCase
 
   return merged
+}
+
+function extractUseCaseFromMessage(message: string) {
+  const normalized = normalizeText(message)
+
+  if (["render", "do hoa", "thiet ke", "blender", "premiere", "photoshop", "autocad", "workstation"].some((keyword) => normalized.includes(keyword))) {
+    return "render và thiết kế đồ họa"
+  }
+
+  if (["gaming", "choi game", "game", "valorant", "lol", "pubg", "cs2"].some((keyword) => normalized.includes(keyword))) {
+    return "gaming"
+  }
+
+  if (["hoc tap", "van phong", "lap trinh", "code"].some((keyword) => normalized.includes(keyword))) {
+    return "học tập, văn phòng hoặc lập trình"
+  }
+
+  if (["laptop", "may tinh xach tay", "mong nhe"].some((keyword) => normalized.includes(keyword))) {
+    return "laptop"
+  }
+
+  return undefined
 }
 
 export async function getChatContext(sessionId: string): Promise<ChatContext> {
@@ -70,6 +94,7 @@ export async function getChatContext(sessionId: string): Promise<ChatContext> {
       return mergeContext(context, {
         lastMinPrice: budget.minPrice,
         lastMaxPrice: budget.maxPrice,
+        lastUseCase: extractUseCaseFromMessage(row.content),
       })
     }
 

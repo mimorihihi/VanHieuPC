@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server"
 
-import { getChatHistory, getChatSessions, handleChatbotMessage } from "@/lib/chatbot"
+import { getChatHistory, getChatSessions, handleChatbotMessageStream } from "@/lib/chatbot"
 
 type ChatbotBody = {
   sessionId?: string
@@ -32,8 +32,7 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "message is required" }, { status: 400 })
     }
 
-    const result = await handleChatbotMessage(message, sessionId)
-    return Response.json(result)
+    return handleChatbotMessageStream(message, sessionId)
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to process chatbot request"
     return Response.json({ error: message }, { status: 500 })
