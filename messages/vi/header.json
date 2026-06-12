@@ -1,10 +1,10 @@
 {
   "Header": {
-    "hoursLabel": "Thứ 2 - Thứ 5:",
-    "hoursValue": "9:00 - 17:30",
-    "showroomText": "Ghé showroom tại 1234 Street Address, City Address, 1234",
+    "hoursLabel": "Giờ mở cửa:",
+    "hoursValue": "08:30 - 17:00",
+    "showroomText": "Đường Z115, Phường Quyết Thắng, Tỉnh Thái Nguyên",
     "contactUs": "Liên hệ",
-    "callUs": "Gọi ngay:",
+    "callUs": "Gọi ngay",
     "nav": {
       "pcGaming": "PC Gaming",
       "pcWorkstation": "PC Đồ hoạ - Làm việc",

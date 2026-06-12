@@ -85,18 +85,18 @@ export function SiteHeader() {
         <div className="container mx-auto flex items-center justify-center px-4 py-1.5 text-[11px] text-zinc-500 sm:justify-between">
           <div className="hidden items-center gap-4 sm:flex">
             <span>
-              Opening Hours: <span className="font-medium text-zinc-800">08:30 - 17:00</span>
+              {t("hoursLabel")} <span className="font-medium text-zinc-800">{t("hoursValue")}</span>
             </span>
             <span className="hidden text-zinc-400 md:inline">|</span>
             <span className="hidden md:inline">
-              Duong Z115, Phuong Quyet Thang, Tinh Thai Nguyen -{" "}
+              {t("showroomText")} -{" "}
               <Link href="/contact" className="font-semibold text-zinc-700 hover:text-blue-600">
-                Contact us
+                {t("contactUs")}
               </Link>
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <span>Call us 0867306789</span>
+            <span>{t("callUs")} 0867306789</span>
             <div className="ml-2 hidden gap-2 sm:flex">
               <a href="#" className="hover:text-blue-600 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>

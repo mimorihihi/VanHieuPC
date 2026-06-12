@@ -108,10 +108,10 @@ export function SiteFooter() {
             <ul className="space-y-1.5 text-xs leading-tight text-zinc-300">
               <li>{t("address.street")}</li>
               <li>{t("address.phone")}: <a href="tel:0012345678" className="text-blue-500 hover:text-blue-400">(00) 1234 5678</a></li>
-              <li>We are open: Monday–Thursday: 9:00 AM – 5:30 PM</li>
-              <li>Friday: 9:00 AM – 6:00 PM</li>
-              <li>Saturday: 11:00 AM – 5:00 PM</li>
-              <li>E-mail: <a href="mailto:shop@email.com" className="text-blue-500 hover:text-blue-400">shop@email.com</a></li>
+              <li>{t("address.openMondayThursday")}</li>
+              <li>{t("address.openFriday")}</li>
+              <li>{t("address.openSaturday")}</li>
+              <li>{t("address.email")}: <a href="mailto:shop@email.com" className="text-blue-500 hover:text-blue-400">shop@email.com</a></li>
             </ul>
           </div>
         </div>

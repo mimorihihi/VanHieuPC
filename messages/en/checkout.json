@@ -37,6 +37,32 @@
       "district": "District",
       "ward": "Ward",
       "note": "Order note"
+    },
+    "options": {
+      "pickupStoreTitle": "Pick up in store · Pay at counter",
+      "pickupStoreDesc": "Inspect your items directly at the showroom before payment.",
+      "pickupOnlineTitle": "Pick up in store · Pay online",
+      "pickupOnlineDesc": "Pay in advance via VNPAY, then collect your order at the showroom.",
+      "deliveryOnlineTitle": "Home delivery · Pay online",
+      "deliveryOnlineDesc": "Your order will be delivered to your address after successful online payment."
+    },
+    "quantityShort": "QTY",
+    "submitting": "Creating order...",
+    "errors": {
+      "requiredContact": "Please enter your email, full name, and phone number.",
+      "requiredAddress": "Please enter the full delivery address for home delivery.",
+      "reviewFields": "Please review the highlighted information.",
+      "emailRequired": "Please enter your email address.",
+      "emailInvalid": "Please enter a valid email address.",
+      "fullNameRequired": "Please enter your full name.",
+      "fullNameInvalid": "Full name must be at least 2 characters.",
+      "phoneRequired": "Please enter your phone number.",
+      "phoneInvalid": "Please enter a valid phone number.",
+      "addressRequired": "Please enter your street address.",
+      "provinceRequired": "Please enter your province / city.",
+      "districtRequired": "Please enter your district.",
+      "wardRequired": "Please enter your ward.",
+      "placeOrder": "Unable to create order. Please try again."
     }
   }
 }

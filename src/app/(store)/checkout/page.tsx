@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type FormEvent } from "react"
 import { Check } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { SiteHeader } from "@/components/site-header"
@@ -62,8 +62,24 @@ type ShippingForm = {
   note: string
 }
 
+type AddressItem = {
+  id: string
+  full_name: string
+  phone: string
+  province: string
+  district: string
+  ward: string
+  address_line: string
+  is_default: boolean
+}
+
 type CheckoutOption = "pickup_store" | "pickup_online" | "delivery_online"
 
+type FormErrors = Partial<Record<keyof ShippingForm, string>>
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const PHONE_PATTERN = /^(0|\+84)(\d[\s.-]?){8,10}$/
+const REQUIRED_ADDRESS_FIELDS: Array<keyof ShippingForm> = ["address", "province", "district", "ward"]
 
 function formatMoney(value: number) {
   return `${value.toLocaleString("vi-VN")} đ`
@@ -97,6 +113,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState("")
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({})
   const [coupon, setCoupon] = useState<AppliedCoupon | null>(null)
   const [checkoutOption, setCheckoutOption] = useState<CheckoutOption>("pickup_store")
   const [form, setForm] = useState<ShippingForm>({
@@ -143,10 +160,31 @@ export default function CheckoutPage() {
           }))
         }
 
-        const response = await fetch(`/api/cart?user_id=${encodeURIComponent(user.id)}`)
-        const data = await response.json()
-        if (response.ok && mounted) {
-          setItems((data.items ?? []) as CartItem[])
+        const [cartResponse, addressesResponse] = await Promise.all([
+          fetch(`/api/cart?user_id=${encodeURIComponent(user.id)}`),
+          fetch("/api/me/addresses"),
+        ])
+
+        const cartData = await cartResponse.json()
+        if (cartResponse.ok && mounted) {
+          setItems((cartData.items ?? []) as CartItem[])
+        }
+
+        if (addressesResponse.ok && mounted) {
+          const addressData = (await addressesResponse.json()) as { addresses?: AddressItem[] }
+          const defaultAddress = addressData.addresses?.find((address) => address.is_default) ?? addressData.addresses?.[0]
+
+          if (defaultAddress) {
+            setForm((prev) => ({
+              ...prev,
+              fullName: defaultAddress.full_name || prev.fullName,
+              phone: defaultAddress.phone || prev.phone,
+              province: defaultAddress.province || prev.province,
+              district: defaultAddress.district || prev.district,
+              ward: defaultAddress.ward || prev.ward,
+              address: defaultAddress.address_line || prev.address,
+            }))
+          }
         }
       } finally {
         if (mounted) {
@@ -184,21 +222,64 @@ export default function CheckoutPage() {
 
   const updateField = (field: keyof ShippingForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev
+      const next = { ...prev }
+      delete next[field]
+      return next
+    })
+    if (submitError) setSubmitError("")
   }
 
-  const handlePlaceOrder = async () => {
-    if (items.length === 0 || hasInvalidItems || submitting) return
-
-    if (!form.email.trim() || !form.fullName.trim() || !form.phone.trim()) {
-      setSubmitError("Vui lòng nhập đầy đủ email, họ tên và số điện thoại.")
-      return
+  const validateForm = () => {
+    const nextErrors: FormErrors = {}
+    const trimmed = {
+      email: form.email.trim(),
+      fullName: form.fullName.trim(),
+      phone: form.phone.trim(),
+      province: form.province.trim(),
+      district: form.district.trim(),
+      ward: form.ward.trim(),
+      address: form.address.trim(),
+      note: form.note.trim(),
     }
 
-    if (
-      checkoutOption === "delivery_online" &&
-      (!form.address.trim() || !form.province.trim() || !form.district.trim() || !form.ward.trim())
-    ) {
-      setSubmitError("Vui lòng nhập đầy đủ địa chỉ giao hàng cho đơn giao tận nơi.")
+    if (!trimmed.email) {
+      nextErrors.email = t("errors.emailRequired")
+    } else if (!EMAIL_PATTERN.test(trimmed.email)) {
+      nextErrors.email = t("errors.emailInvalid")
+    }
+
+    if (!trimmed.fullName) {
+      nextErrors.fullName = t("errors.fullNameRequired")
+    } else if (trimmed.fullName.length < 2) {
+      nextErrors.fullName = t("errors.fullNameInvalid")
+    }
+
+    if (!trimmed.phone) {
+      nextErrors.phone = t("errors.phoneRequired")
+    } else if (!PHONE_PATTERN.test(trimmed.phone)) {
+      nextErrors.phone = t("errors.phoneInvalid")
+    }
+
+    if (checkoutOption === "delivery_online") {
+      REQUIRED_ADDRESS_FIELDS.forEach((field) => {
+        if (!trimmed[field]) {
+          nextErrors[field] = t(`errors.${field}Required`)
+        }
+      })
+    }
+
+    setFieldErrors(nextErrors)
+    return Object.keys(nextErrors).length === 0
+  }
+
+  const handlePlaceOrder = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault()
+    if (items.length === 0 || hasInvalidItems || submitting) return
+
+    if (!validateForm()) {
+      setSubmitError(t("errors.reviewFields"))
       return
     }
 
@@ -236,7 +317,7 @@ export default function CheckoutPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        setSubmitError(data.error ?? "Không thể tạo đơn hàng. Vui lòng thử lại.")
+        setSubmitError(data.error ?? t("errors.placeOrder"))
         return
       }
 
@@ -252,7 +333,7 @@ export default function CheckoutPage() {
 
       router.push(`/payment/success?order=${encodeURIComponent(data.order?.order_number ?? "")}`)
     } catch {
-      setSubmitError("Không thể tạo đơn hàng. Vui lòng thử lại.")
+      setSubmitError(t("errors.placeOrder"))
     } finally {
       setSubmitting(false)
     }
@@ -314,18 +395,28 @@ export default function CheckoutPage() {
                 <h2 className="text-sm font-semibold text-zinc-950">{t("shippingTitle")}</h2>
               </div>
 
-              <div className="space-y-4">
+              <form id="checkout-form" className="space-y-4" onSubmit={handlePlaceOrder} noValidate>
                 <div>
                   <label className="mb-1.5 block text-[11px] font-semibold text-zinc-700">
                     {t("fields.email")} *
                   </label>
                   <input
+                    id="checkout-email"
+                    type="email"
                     value={form.email}
                     onChange={(event) => updateField("email", event.target.value)}
-                    className="h-11 w-full rounded-none border border-zinc-300 px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600"
+                    aria-invalid={Boolean(fieldErrors.email)}
+                    aria-describedby={fieldErrors.email ? "checkout-email-error" : undefined}
+                    className={`h-11 w-full rounded-none border px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600 ${fieldErrors.email ? "border-red-400 bg-red-50/40" : "border-zinc-300"}`}
                     placeholder={t("fields.email")}
                   />
-                  <p className="mt-1.5 text-[11px] text-zinc-500">{t("emailHint")}</p>
+                  {fieldErrors.email ? (
+                    <p id="checkout-email-error" className="mt-1.5 text-[11px] font-medium text-red-600">
+                      {fieldErrors.email}
+                    </p>
+                  ) : (
+                    <p className="mt-1.5 text-[11px] text-zinc-500">{t("emailHint")}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -334,22 +425,39 @@ export default function CheckoutPage() {
                       {t("fields.fullName")} *
                     </label>
                     <input
+                      id="checkout-full-name"
                       value={form.fullName}
                       onChange={(event) => updateField("fullName", event.target.value)}
-                      className="h-11 w-full rounded-none border border-zinc-300 px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600"
+                      aria-invalid={Boolean(fieldErrors.fullName)}
+                      aria-describedby={fieldErrors.fullName ? "checkout-full-name-error" : undefined}
+                      className={`h-11 w-full rounded-none border px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600 ${fieldErrors.fullName ? "border-red-400 bg-red-50/40" : "border-zinc-300"}`}
                       placeholder={t("fields.fullName")}
                     />
+                    {fieldErrors.fullName ? (
+                      <p id="checkout-full-name-error" className="mt-1.5 text-[11px] font-medium text-red-600">
+                        {fieldErrors.fullName}
+                      </p>
+                    ) : null}
                   </div>
                   <div>
                     <label className="mb-1.5 block text-[11px] font-semibold text-zinc-700">
                       {t("fields.phone")} *
                     </label>
                     <input
+                      id="checkout-phone"
+                      inputMode="tel"
                       value={form.phone}
                       onChange={(event) => updateField("phone", event.target.value)}
-                      className="h-11 w-full rounded-none border border-zinc-300 px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600"
+                      aria-invalid={Boolean(fieldErrors.phone)}
+                      aria-describedby={fieldErrors.phone ? "checkout-phone-error" : undefined}
+                      className={`h-11 w-full rounded-none border px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600 ${fieldErrors.phone ? "border-red-400 bg-red-50/40" : "border-zinc-300"}`}
                       placeholder={t("fields.phone")}
                     />
+                    {fieldErrors.phone ? (
+                      <p id="checkout-phone-error" className="mt-1.5 text-[11px] font-medium text-red-600">
+                        {fieldErrors.phone}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 
@@ -358,11 +466,19 @@ export default function CheckoutPage() {
                     {t("fields.address")} *
                   </label>
                   <input
+                    id="checkout-address"
                     value={form.address}
                     onChange={(event) => updateField("address", event.target.value)}
-                    className="h-11 w-full rounded-none border border-zinc-300 px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600"
+                    aria-invalid={Boolean(fieldErrors.address)}
+                    aria-describedby={fieldErrors.address ? "checkout-address-error" : undefined}
+                    className={`h-11 w-full rounded-none border px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600 ${fieldErrors.address ? "border-red-400 bg-red-50/40" : "border-zinc-300"}`}
                     placeholder={t("fields.address")}
                   />
+                  {fieldErrors.address ? (
+                    <p id="checkout-address-error" className="mt-1.5 text-[11px] font-medium text-red-600">
+                      {fieldErrors.address}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -371,22 +487,38 @@ export default function CheckoutPage() {
                       {t("fields.province")} *
                     </label>
                     <input
+                      id="checkout-province"
                       value={form.province}
                       onChange={(event) => updateField("province", event.target.value)}
-                      className="h-11 w-full rounded-none border border-zinc-300 px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600"
+                      aria-invalid={Boolean(fieldErrors.province)}
+                      aria-describedby={fieldErrors.province ? "checkout-province-error" : undefined}
+                      className={`h-11 w-full rounded-none border px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600 ${fieldErrors.province ? "border-red-400 bg-red-50/40" : "border-zinc-300"}`}
                       placeholder={t("fields.province")}
                     />
+                    {fieldErrors.province ? (
+                      <p id="checkout-province-error" className="mt-1.5 text-[11px] font-medium text-red-600">
+                        {fieldErrors.province}
+                      </p>
+                    ) : null}
                   </div>
                   <div>
                     <label className="mb-1.5 block text-[11px] font-semibold text-zinc-700">
                       {t("fields.district")} *
                     </label>
                     <input
+                      id="checkout-district"
                       value={form.district}
                       onChange={(event) => updateField("district", event.target.value)}
-                      className="h-11 w-full rounded-none border border-zinc-300 px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600"
+                      aria-invalid={Boolean(fieldErrors.district)}
+                      aria-describedby={fieldErrors.district ? "checkout-district-error" : undefined}
+                      className={`h-11 w-full rounded-none border px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600 ${fieldErrors.district ? "border-red-400 bg-red-50/40" : "border-zinc-300"}`}
                       placeholder={t("fields.district")}
                     />
+                    {fieldErrors.district ? (
+                      <p id="checkout-district-error" className="mt-1.5 text-[11px] font-medium text-red-600">
+                        {fieldErrors.district}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 
@@ -395,11 +527,19 @@ export default function CheckoutPage() {
                     {t("fields.ward")} *
                   </label>
                   <input
+                    id="checkout-ward"
                     value={form.ward}
                     onChange={(event) => updateField("ward", event.target.value)}
-                    className="h-11 w-full rounded-none border border-zinc-300 px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600"
+                    aria-invalid={Boolean(fieldErrors.ward)}
+                    aria-describedby={fieldErrors.ward ? "checkout-ward-error" : undefined}
+                    className={`h-11 w-full rounded-none border px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600 ${fieldErrors.ward ? "border-red-400 bg-red-50/40" : "border-zinc-300"}`}
                     placeholder={t("fields.ward")}
                   />
+                  {fieldErrors.ward ? (
+                    <p id="checkout-ward-error" className="mt-1.5 text-[11px] font-medium text-red-600">
+                      {fieldErrors.ward}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div>
@@ -414,7 +554,7 @@ export default function CheckoutPage() {
                     placeholder={t("fields.note")}
                   />
                 </div>
-              </div>
+              </form>
 
               <div className="mt-10 border-t border-zinc-200 pt-6">
                 <div className="mb-4 text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
@@ -431,9 +571,9 @@ export default function CheckoutPage() {
                       className="mt-1 h-4 w-4 accent-blue-600"
                     />
                     <div>
-                      <div className="text-sm font-medium text-zinc-900">Nhận tại cửa hàng · Thanh toán tại quầy</div>
+                      <div className="text-sm font-medium text-zinc-900">{t("options.pickupStoreTitle")}</div>
                       <p className="mt-1 text-xs leading-5 text-zinc-500">
-                        Kiểm tra hàng trực tiếp tại showroom trước khi thanh toán.
+                        {t("options.pickupStoreDesc")}
                       </p>
                     </div>
                   </div>
@@ -450,9 +590,9 @@ export default function CheckoutPage() {
                       className="mt-1 h-4 w-4 accent-blue-600"
                     />
                     <div>
-                      <div className="text-sm font-medium text-zinc-900">Nhận tại cửa hàng · Thanh toán online</div>
+                      <div className="text-sm font-medium text-zinc-900">{t("options.pickupOnlineTitle")}</div>
                       <p className="mt-1 text-xs leading-5 text-zinc-500">
-                        Thanh toán trước qua VNPAY, sau đó đến showroom nhận hàng.
+                        {t("options.pickupOnlineDesc")}
                       </p>
                     </div>
                   </div>
@@ -469,9 +609,9 @@ export default function CheckoutPage() {
                       className="mt-1 h-4 w-4 accent-blue-600"
                     />
                     <div>
-                      <div className="text-sm font-medium text-zinc-900">Giao tận nơi · Thanh toán online</div>
+                      <div className="text-sm font-medium text-zinc-900">{t("options.deliveryOnlineTitle")}</div>
                       <p className="mt-1 text-xs leading-5 text-zinc-500">
-                        Giao hàng đến địa chỉ của bạn sau khi thanh toán online thành công.
+                        {t("options.deliveryOnlineDesc")}
                       </p>
                     </div>
                   </div>
@@ -487,12 +627,12 @@ export default function CheckoutPage() {
                 ) : null}
 
                 <button
-                  type="button"
-                  onClick={handlePlaceOrder}
+                  type="submit"
+                  form="checkout-form"
                   disabled={items.length === 0 || hasInvalidItems || submitting}
                   className="inline-flex h-10 min-w-[122px] items-center justify-center rounded-full bg-blue-600 px-8 text-xs font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
                 >
-                  {submitting ? "Đang tạo đơn..." : t("next")}
+                  {submitting ? t("submitting") : t("next")}
                 </button>
               </div>
             </section>
@@ -532,7 +672,7 @@ export default function CheckoutPage() {
                             <p className="mt-1 text-[11px] text-zinc-500">{item.variant_name}</p>
                           ) : null}
                           <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-zinc-500">
-                            <span>QTY: {item.quantity}</span>
+                            <span>{t("quantityShort")}: {item.quantity}</span>
                             <span className="font-semibold text-zinc-900">
                               {formatMoney(Number(item.sale_price ?? item.price ?? 0) * Number(item.quantity ?? 1))}
                             </span>

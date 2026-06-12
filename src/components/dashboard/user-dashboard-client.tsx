@@ -921,43 +921,44 @@ export function UserDashboardClient() {
                           value={addressForm.full_name}
                           onChange={(event) => setAddressForm((prev) => ({ ...prev, full_name: event.target.value }))}
                           placeholder="Full name"
-                          className="h-11 w-full rounded border border-zinc-300 px-3 text-sm outline-none focus:border-blue-600"
+                          className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                         />
                         <input
                           value={addressForm.phone}
                           onChange={(event) => setAddressForm((prev) => ({ ...prev, phone: event.target.value }))}
                           placeholder="Phone"
-                          className="h-11 w-full rounded border border-zinc-300 px-3 text-sm outline-none focus:border-blue-600"
+                          className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                         />
                         <input
                           value={addressForm.province}
                           onChange={(event) => setAddressForm((prev) => ({ ...prev, province: event.target.value }))}
                           placeholder="Province / City"
-                          className="h-11 w-full rounded border border-zinc-300 px-3 text-sm outline-none focus:border-blue-600"
+                          className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                         />
                         <input
                           value={addressForm.district}
                           onChange={(event) => setAddressForm((prev) => ({ ...prev, district: event.target.value }))}
                           placeholder="District"
-                          className="h-11 w-full rounded border border-zinc-300 px-3 text-sm outline-none focus:border-blue-600"
+                          className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                         />
                         <input
                           value={addressForm.ward}
                           onChange={(event) => setAddressForm((prev) => ({ ...prev, ward: event.target.value }))}
                           placeholder="Ward"
-                          className="h-11 w-full rounded border border-zinc-300 px-3 text-sm outline-none focus:border-blue-600"
+                          className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                         />
                         <input
                           value={addressForm.address_line}
                           onChange={(event) => setAddressForm((prev) => ({ ...prev, address_line: event.target.value }))}
                           placeholder="Address line"
-                          className="h-11 w-full rounded border border-zinc-300 px-3 text-sm outline-none focus:border-blue-600"
+                          className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                         />
                         <label className="flex items-center gap-2 text-xs font-semibold text-zinc-700">
                           <input
                             type="checkbox"
                             checked={addressForm.is_default}
                             onChange={(event) => setAddressForm((prev) => ({ ...prev, is_default: event.target.checked }))}
+                            className="h-4 w-4 accent-blue-600"
                           />
                           Set as default address
                         </label>

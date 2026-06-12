@@ -31,9 +31,20 @@
     "couponEmptyCart": "Add products before applying a coupon.",
     "couponFailed": "Unable to apply coupon.",
     "checkoutBlocked": "Remove out-of-stock items before checkout.",
+    "subtotal": "Subtotal",
     "shipping": "Shipping",
     "vat": "VAT (10%)",
     "orderTotal": "Order Total",
-    "checkout": "Proceed to Checkout"
+    "checkout": "Proceed to Checkout",
+    "decreaseQuantity": "Decrease quantity",
+    "increaseQuantity": "Increase quantity",
+    "removeItem": "Remove item",
+    "errors": {
+      "load": "Failed to load cart",
+      "refresh": "Failed to refresh cart",
+      "update": "Failed to update cart",
+      "remove": "Failed to remove item",
+      "clear": "Failed to clear cart"
+    }
   }
 }

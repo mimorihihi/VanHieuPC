@@ -1,0 +1,72 @@
+{
+  "Payment": {
+    "orderFallback": "your order",
+    "layout": {
+      "orderNumber": "Order number",
+      "currentStatus": "Current status"
+    },
+    "actions": {
+      "viewMyOrders": "View my orders",
+      "viewOrder": "View order",
+      "continueShopping": "Continue shopping",
+      "home": "Back to home"
+    },
+    "success": {
+      "paymentBadge": "Payment Success",
+      "orderBadge": "Order Success",
+      "paymentTitle": "Payment successful",
+      "orderTitle": "Order placed successfully",
+      "paymentDescriptionPrefix": "Payment for",
+      "paymentDescriptionSuffix": "has been recorded successfully. Your order has been confirmed and will be processed by the store soon.",
+      "orderDescriptionPrefix": "Thank you for your order. We have received",
+      "orderDescriptionSuffix": "and will contact you soon to confirm the order and guide the next payment step if needed.",
+      "paidStatus": "Paid · Confirmed",
+      "createdStatus": "Order created · Awaiting confirmation",
+      "paidTimeline1": "The online payment gateway confirmed the transaction successfully.",
+      "paidTimeline2": "The order status has been updated to confirmed in the system.",
+      "paidTimeline3": "You can follow the order details from your account page.",
+      "orderTimeline1": "The order has been saved in the store system.",
+      "orderTimeline2": "Our staff will contact you to confirm stock availability and pickup/delivery time.",
+      "orderTimeline3": "You can still follow the order details from your account page.",
+      "paidPanelTitle": "Payment completed!",
+      "orderPanelTitle": "Thank you!",
+      "paidPanelDescription": "Payment and order information has been updated successfully. The store will process your order as quickly as possible.",
+      "orderPanelDescription": "Your order information has been recorded successfully. We will process it as quickly as possible."
+    },
+    "failed": {
+      "badge": "Payment Failed",
+      "title": "Payment not completed",
+      "descriptionPrefix": "The system has not recorded a successful payment for",
+      "statusWithCode": "Payment failed · Code {code}",
+      "pendingStatus": "Awaiting payment / needs review",
+      "panelTitle": "Transaction needs review",
+      "authenticatedHint": "You can open your order page to check the status and pay again if needed.",
+      "guestHint": "If you checked out as a guest, please save the order number so the store can help verify the transaction.",
+      "supportHint": "If money was deducted but the status has not updated, contact the store for faster support.",
+      "authenticatedPanelDescription": "You can check the order in your account and pay again for the correct order if the transaction is not complete.",
+      "guestPanelDescription": "The order may still be saved. Please keep the order number and contact the store if you need verification or payment support.",
+      "defaultReason": "The transaction has not been confirmed successfully. Please check again or contact the store if you need support.",
+      "reasons": {
+        "invalidSignature": "The transaction could not be securely verified. Please try again or contact the store for support.",
+        "missingOrder": "The payment gateway did not return enough order information. Please save the order number and contact the store for verification.",
+        "orderNotFound": "The system could not find the matching order. Please save the order number and contact the store for support.",
+        "invalidPaymentMethod": "The order payment method does not match. Please choose the appropriate payment method again.",
+        "invalidAmount": "The payment amount does not match the order total. Please do not pay again immediately if money was deducted."
+      },
+      "codes": {
+        "07": "The transaction needs additional review from the bank. Please contact the store if money was deducted.",
+        "09": "Your card or account is not registered for online payment service.",
+        "10": "The payment authentication information is incorrect. Please check and try again later.",
+        "11": "The transaction timed out. You can try again if you still want to purchase.",
+        "12": "Your card or account is locked and cannot complete the payment.",
+        "13": "The transaction authentication code is incorrect. Please check the information from your bank.",
+        "24": "You cancelled the transaction or left the payment gateway before completion.",
+        "51": "Your account balance is insufficient to complete the payment.",
+        "65": "The account has exceeded the daily payment limit.",
+        "75": "The payment bank is temporarily under maintenance. Please try again later.",
+        "79": "You entered incorrect authentication information too many times. Please try again later or contact your bank.",
+        "99": "The transaction was not completed due to an error from the payment gateway or bank. Please try again later."
+      }
+    }
+  }
+}

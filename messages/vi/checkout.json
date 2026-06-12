@@ -37,6 +37,32 @@
       "district": "Quận / Huyện",
       "ward": "Phường / Xã",
       "note": "Ghi chú đơn hàng"
+    },
+    "options": {
+      "pickupStoreTitle": "Nhận tại cửa hàng · Thanh toán tại quầy",
+      "pickupStoreDesc": "Kiểm tra hàng trực tiếp tại showroom trước khi thanh toán.",
+      "pickupOnlineTitle": "Nhận tại cửa hàng · Thanh toán online",
+      "pickupOnlineDesc": "Thanh toán trước qua VNPAY, sau đó đến showroom nhận hàng.",
+      "deliveryOnlineTitle": "Giao tận nơi · Thanh toán online",
+      "deliveryOnlineDesc": "Giao hàng đến địa chỉ của bạn sau khi thanh toán online thành công."
+    },
+    "quantityShort": "SL",
+    "submitting": "Đang tạo đơn...",
+    "errors": {
+      "requiredContact": "Vui lòng nhập đầy đủ email, họ tên và số điện thoại.",
+      "requiredAddress": "Vui lòng nhập đầy đủ địa chỉ giao hàng cho đơn giao tận nơi.",
+      "reviewFields": "Vui lòng kiểm tra lại các thông tin được đánh dấu.",
+      "emailRequired": "Vui lòng nhập email.",
+      "emailInvalid": "Email không đúng định dạng.",
+      "fullNameRequired": "Vui lòng nhập họ và tên.",
+      "fullNameInvalid": "Họ và tên cần có ít nhất 2 ký tự.",
+      "phoneRequired": "Vui lòng nhập số điện thoại.",
+      "phoneInvalid": "Số điện thoại không đúng định dạng.",
+      "addressRequired": "Vui lòng nhập địa chỉ cụ thể.",
+      "provinceRequired": "Vui lòng nhập tỉnh / thành phố.",
+      "districtRequired": "Vui lòng nhập quận / huyện.",
+      "wardRequired": "Vui lòng nhập phường / xã.",
+      "placeOrder": "Không thể tạo đơn hàng. Vui lòng thử lại."
     }
   }
 }

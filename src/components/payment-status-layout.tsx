@@ -3,6 +3,7 @@
 import Link from "next/link"
 import Lottie from "lottie-react"
 import type { LucideIcon } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { SiteHeader } from "@/components/site-header"
 import { SupportFeature } from "@/components/home/support-features"
 import { SiteFooter } from "@/components/site-footer"
@@ -74,6 +75,7 @@ export function PaymentStatusLayout({
   panelIcon: PanelIcon,
 }: PaymentStatusLayoutProps) {
   const styles = themeMap[theme]
+  const t = useTranslations("Payment.layout")
 
   return (
     <div className={cn("flex min-h-screen flex-col", styles.pageBackground)}>
@@ -101,13 +103,13 @@ export function PaymentStatusLayout({
 
                 <div className="mt-8 grid gap-4 sm:grid-cols-2">
                   <div className={cn("min-w-0 overflow-hidden rounded-2xl border p-4", styles.orderCard)}>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-700">Mã đơn hàng</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-700">{t("orderNumber")}</p>
                     <p className="mt-2 block max-w-full whitespace-normal break-all text-base font-semibold leading-6 text-zinc-900 sm:text-lg">
                       {orderNumber}
                     </p>
                   </div>
                   <div className="min-w-0 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Trạng thái hiện tại</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{t("currentStatus")}</p>
                     <p className="mt-2 break-words text-lg font-semibold text-zinc-900">{statusLabel}</p>
                   </div>
                 </div>

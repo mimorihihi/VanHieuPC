@@ -1,3 +1,4 @@
+import crypto from "node:crypto"
 import { execute, query } from "@/lib/db"
 import { NextRequest } from "next/server"
 
@@ -8,6 +9,62 @@ function serializeProduct(p: any) {
     sale_price: p.sale_price?.toString() ?? null,
     avg_rating: p.avg_rating?.toString() ?? "0",
   }
+}
+
+type VariantInput = {
+  name?: unknown
+  price_override?: unknown
+  stock?: unknown
+  is_active?: unknown
+  attributes?: unknown
+  images?: unknown
+}
+
+type ProductImageInput = {
+  url?: unknown
+  sort_order?: unknown
+}
+
+function normalizeAttributes(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {}
+
+  return Object.entries(value).reduce<Record<string, string>>((acc, [key, attrValue]) => {
+    const nextKey = key.trim()
+    const nextValue = attrValue == null ? "" : String(attrValue).trim()
+    if (nextKey && nextValue) acc[nextKey] = nextValue
+    return acc
+  }, {})
+}
+
+function normalizeImages(value: unknown) {
+  if (!Array.isArray(value)) return []
+
+  return value
+    .filter((image): image is ProductImageInput => !!image && typeof image === "object")
+    .map((image, index) => ({
+      url: image.url == null ? "" : String(image.url).trim(),
+      sort_order: Number(image.sort_order ?? index + 1),
+    }))
+    .filter((image) => image.url.length > 0)
+}
+
+function normalizeVariants(value: unknown) {
+  if (!Array.isArray(value)) return []
+
+  return value
+    .filter((variant): variant is VariantInput => !!variant && typeof variant === "object")
+    .map((variant) => ({
+      name: typeof variant.name === "string" ? variant.name.trim() : "",
+      price_override:
+        variant.price_override === null || variant.price_override === "" || variant.price_override === undefined
+          ? null
+          : Number(variant.price_override),
+      stock: Number(variant.stock ?? 0),
+      is_active: variant.is_active ?? true,
+      attributes: normalizeAttributes(variant.attributes),
+      images: normalizeImages(variant.images),
+    }))
+    .filter((variant) => variant.name.length > 0)
 }
 
 export async function GET(req: NextRequest) {
@@ -72,6 +129,7 @@ export async function POST(req: NextRequest) {
       is_active,
       is_featured,
       specs,
+      variants,
     } = body
 
     const id = crypto.randomUUID()
@@ -96,6 +154,33 @@ export async function POST(req: NextRequest) {
         is_featured ?? false,
       ]
     )
+    const normalizedVariants = normalizeVariants(variants)
+
+    for (const variant of normalizedVariants) {
+      const variantId = crypto.randomUUID()
+      await execute(
+        `INSERT INTO product_variants
+        (id, product_id, name, price_override, stock, attributes, is_active, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [
+          variantId,
+          id,
+          variant.name,
+          variant.price_override,
+          Number.isFinite(variant.stock) ? variant.stock : 0,
+          JSON.stringify(variant.attributes),
+          variant.is_active ? 1 : 0,
+        ]
+      )
+
+      for (const image of variant.images) {
+        await execute(
+          "INSERT INTO product_images (id, product_id, variant_id, url, sort_order) VALUES (?, ?, ?, ?, ?)",
+          [crypto.randomUUID(), id, variantId, image.url, image.sort_order]
+        )
+      }
+    }
+
     const [rows] = await query("SELECT * FROM products WHERE id = ? LIMIT 1", [id])
     return Response.json(serializeProduct(rows[0]), { status: 201 })
   } catch (error: any) {

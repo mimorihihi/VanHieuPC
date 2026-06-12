@@ -1,10 +1,10 @@
 {
   "Header": {
-    "hoursLabel": "Mon-Thu:",
-    "hoursValue": "9:00 AM - 5:30 PM",
-    "showroomText": "Visit our showroom at 1234 Street Address, City Address, 1234",
-    "contactUs": "Contact Us",
-    "callUs": "Call Us:",
+    "hoursLabel": "Opening Hours:",
+    "hoursValue": "08:30 - 17:00",
+    "showroomText": "Z115 Street, Quyet Thang Ward, Thai Nguyen Province",
+    "contactUs": "Contact us",
+    "callUs": "Call us",
     "nav": {
       "pcGaming": "PC Gaming",
       "pcWorkstation": "Workstations",

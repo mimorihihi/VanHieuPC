@@ -8,6 +8,16 @@ type ProductImageInput = {
   sort_order?: number
 }
 
+type VariantInput = {
+  id?: unknown
+  name?: unknown
+  price_override?: unknown
+  stock?: unknown
+  is_active?: unknown
+  attributes?: unknown
+  images?: unknown
+}
+
 function serializeProduct(p: any) {
   return {
     ...p,
@@ -27,6 +37,50 @@ function parseJsonObject(value: unknown) {
   } catch {
     return {}
   }
+}
+
+function normalizeAttributes(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {}
+
+  return Object.entries(value).reduce<Record<string, string>>((acc, [key, attrValue]) => {
+    const nextKey = key.trim()
+    const nextValue = attrValue == null ? "" : String(attrValue).trim()
+    if (nextKey && nextValue) acc[nextKey] = nextValue
+    return acc
+  }, {})
+}
+
+function normalizeImages(value: unknown) {
+  if (!Array.isArray(value)) return []
+
+  return value
+    .filter((image): image is ProductImageInput => !!image && typeof image === "object")
+    .map((image, index) => ({
+      id: typeof image.id === "string" ? image.id : undefined,
+      url: image.url == null ? "" : String(image.url).trim(),
+      sort_order: Number(image.sort_order ?? index + 1),
+    }))
+    .filter((image) => image.url.length > 0)
+}
+
+function normalizeVariants(value: unknown) {
+  if (!Array.isArray(value)) return []
+
+  return value
+    .filter((variant): variant is VariantInput => !!variant && typeof variant === "object")
+    .map((variant) => ({
+      id: typeof variant.id === "string" ? variant.id : undefined,
+      name: typeof variant.name === "string" ? variant.name.trim() : "",
+      price_override:
+        variant.price_override === null || variant.price_override === "" || variant.price_override === undefined
+          ? null
+          : Number(variant.price_override),
+      stock: Number(variant.stock ?? 0),
+      is_active: variant.is_active ?? true,
+      attributes: normalizeAttributes(variant.attributes),
+      images: normalizeImages(variant.images),
+    }))
+    .filter((variant) => variant.id || variant.name.length > 0)
 }
 
 export async function GET(
@@ -64,10 +118,18 @@ export async function GET(
       "SELECT * FROM product_variants WHERE product_id = ? ORDER BY name ASC",
       [id]
     )
-    product.images = images
+    const variantImagesById = new Map<string, any[]>()
+    for (const image of images as any[]) {
+      if (!image.variant_id) continue
+      const currentImages = variantImagesById.get(image.variant_id) ?? []
+      currentImages.push({ id: image.id, url: image.url, sort_order: image.sort_order })
+      variantImagesById.set(image.variant_id, currentImages)
+    }
+    product.images = (images as any[]).filter((image) => image.variant_id == null)
     product.variants = variants.map((v: any) => ({
       ...v,
       attributes: parseJsonObject(v.attributes),
+      images: variantImagesById.get(v.id) ?? [],
     }))
     return Response.json(serializeProduct(product))
   } catch (error) {
@@ -98,6 +160,7 @@ export async function PUT(
       is_featured,
       specs,
       general_images,
+      variants,
     } = body
 
     const normalizedImages = Array.isArray(general_images)
@@ -145,6 +208,44 @@ export async function PUT(
         "INSERT INTO product_images (id, product_id, variant_id, url, sort_order) VALUES (?, ?, NULL, ?, ?)",
         [crypto.randomUUID(), id, image.url, image.sort_order]
       )
+    }
+
+    const normalizedVariants = normalizeVariants(variants)
+
+    for (const variant of normalizedVariants) {
+      const variantParams = [
+        variant.name,
+        variant.price_override,
+        Number.isFinite(variant.stock) ? variant.stock : 0,
+        JSON.stringify(variant.attributes),
+        variant.is_active ? 1 : 0,
+      ]
+
+      let variantId = variant.id
+      if (variantId) {
+        await execute(
+          `UPDATE product_variants
+           SET name = ?, price_override = ?, stock = ?, attributes = ?, is_active = ?
+           WHERE id = ? AND product_id = ?`,
+          [...variantParams, variantId, id]
+        )
+      } else {
+        variantId = crypto.randomUUID()
+        await execute(
+          `INSERT INTO product_variants
+          (id, product_id, name, price_override, stock, attributes, is_active, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+          [variantId, id, ...variantParams]
+        )
+      }
+
+      await execute("DELETE FROM product_images WHERE product_id = ? AND variant_id = ?", [id, variantId])
+      for (const image of variant.images) {
+        await execute(
+          "INSERT INTO product_images (id, product_id, variant_id, url, sort_order) VALUES (?, ?, ?, ?, ?)",
+          [crypto.randomUUID(), id, variantId, image.url, image.sort_order]
+        )
+      }
     }
 
     const [rows] = await query("SELECT * FROM products WHERE id = ? LIMIT 1", [id])

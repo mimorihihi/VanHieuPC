@@ -44,3 +44,5 @@ next-env.d.ts
 AGENTS.md
 CLAUDE.md
 scripts/seed-demo-products.mjs
+API_EVENT_FLOWS.md
+BUSINESS_FLOW_GUIDE.md

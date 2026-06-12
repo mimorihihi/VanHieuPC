@@ -31,9 +31,20 @@
     "couponEmptyCart": "Hãy thêm sản phẩm trước khi áp dụng mã.",
     "couponFailed": "Không thể áp dụng mã giảm giá.",
     "checkoutBlocked": "Hãy xóa sản phẩm hết hàng trước khi thanh toán.",
+    "subtotal": "Tạm tính",
     "shipping": "Vận chuyển",
     "vat": "VAT (10%)",
     "orderTotal": "Tổng đơn",
-    "checkout": "Thanh toán"
+    "checkout": "Thanh toán",
+    "decreaseQuantity": "Giảm số lượng",
+    "increaseQuantity": "Tăng số lượng",
+    "removeItem": "Xóa sản phẩm",
+    "errors": {
+      "load": "Không thể tải giỏ hàng",
+      "refresh": "Không thể làm mới giỏ hàng",
+      "update": "Không thể cập nhật giỏ hàng",
+      "remove": "Không thể xóa sản phẩm",
+      "clear": "Không thể xóa toàn bộ giỏ hàng"
+    }
   }
 }

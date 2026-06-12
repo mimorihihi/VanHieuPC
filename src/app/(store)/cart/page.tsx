@@ -150,7 +150,7 @@ export default function CartPage() {
         }
       } catch (e: unknown) {
         if (mounted) {
-          setError(getErrorMessage(e, "Failed to load cart"))
+          setError(getErrorMessage(e, t("errors.load")))
         }
       } finally {
         if (mounted) {
@@ -235,7 +235,7 @@ export default function CartPage() {
 
       const response = await fetch(`/api/cart?user_id=${encodeURIComponent(authUser.id)}`)
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error ?? "Failed to refresh cart")
+      if (!response.ok) throw new Error(data.error ?? t("errors.refresh"))
 
       const nextItems = (data.items ?? []) as CartItem[]
       setItems(nextItems)
@@ -246,7 +246,7 @@ export default function CartPage() {
         }, {})
       )
     } catch (e: unknown) {
-      setError(getErrorMessage(e, "Failed to update cart"))
+      setError(getErrorMessage(e, t("errors.update")))
     } finally {
       setIsUpdating(false)
     }
@@ -326,7 +326,7 @@ export default function CartPage() {
         }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error ?? "Failed to remove item")
+      if (!response.ok) throw new Error(data.error ?? t("errors.remove"))
 
       setItems((prev) => prev.filter((item) => item.id !== itemId))
       setQtyDraft((prev) => {
@@ -335,7 +335,7 @@ export default function CartPage() {
         return next
       })
     } catch (e: unknown) {
-      setError(getErrorMessage(e, "Failed to remove item"))
+      setError(getErrorMessage(e, t("errors.remove")))
     }
   }
 
@@ -372,7 +372,7 @@ export default function CartPage() {
       setAppliedCoupon(null)
       setCouponCode("")
     } catch (e: unknown) {
-      setError(getErrorMessage(e, "Failed to clear cart"))
+      setError(getErrorMessage(e, t("errors.clear")))
     } finally {
       setIsUpdating(false)
     }
@@ -457,7 +457,7 @@ export default function CartPage() {
                             type="button"
                             onClick={() => decreaseQty(rowId, qty)}
                             className="inline-flex h-9 w-8 items-center justify-center text-zinc-600 transition-colors hover:bg-zinc-100"
-                            aria-label="Decrease quantity"
+                            aria-label={t("decreaseQuantity")}
                           >
                             <Minus className="h-4 w-4" />
                           </button>
@@ -472,7 +472,7 @@ export default function CartPage() {
                             type="button"
                             onClick={() => increaseQty(rowId, qty)}
                             className="inline-flex h-9 w-8 items-center justify-center text-zinc-600 transition-colors hover:bg-zinc-100"
-                            aria-label="Increase quantity"
+                            aria-label={t("increaseQuantity")}
                           >
                             <Plus className="h-4 w-4" />
                           </button>
@@ -486,7 +486,7 @@ export default function CartPage() {
                             type="button"
                             onClick={() => removeItem(rowId)}
                             className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-zinc-300 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
-                            aria-label="Remove item"
+                            aria-label={t("removeItem")}
                           >
                             <CircleX className="h-4 w-4" />
                           </button>
@@ -576,7 +576,7 @@ export default function CartPage() {
 
               <div className="mt-4 space-y-2 text-xs text-zinc-700">
                 <div className="flex justify-between">
-                  <span>Subtotal</span>
+                  <span>{t("subtotal")}</span>
                   <span className="font-semibold">{formatMoney(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">

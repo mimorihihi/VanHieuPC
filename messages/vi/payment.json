@@ -1,0 +1,72 @@
+{
+  "Payment": {
+    "orderFallback": "đơn hàng của bạn",
+    "layout": {
+      "orderNumber": "Mã đơn hàng",
+      "currentStatus": "Trạng thái hiện tại"
+    },
+    "actions": {
+      "viewMyOrders": "Xem đơn hàng của tôi",
+      "viewOrder": "Xem đơn hàng",
+      "continueShopping": "Tiếp tục mua sắm",
+      "home": "Về trang chủ"
+    },
+    "success": {
+      "paymentBadge": "Thanh toán thành công",
+      "orderBadge": "Đặt hàng thành công",
+      "paymentTitle": "Thanh toán thành công",
+      "orderTitle": "Đặt hàng thành công",
+      "paymentDescriptionPrefix": "Thanh toán cho",
+      "paymentDescriptionSuffix": "đã được ghi nhận thành công. Đơn hàng của bạn đã được xác nhận và sẽ sớm được cửa hàng xử lý.",
+      "orderDescriptionPrefix": "Cảm ơn bạn đã đặt hàng. Chúng tôi đã ghi nhận",
+      "orderDescriptionSuffix": "và sẽ sớm liên hệ để xác nhận đơn hàng cũng như hướng dẫn bước thanh toán tiếp theo nếu cần.",
+      "paidStatus": "Đã thanh toán · Đã xác nhận",
+      "createdStatus": "Đã tạo đơn · Chờ xác nhận",
+      "paidTimeline1": "Giao dịch thanh toán online đã được cổng thanh toán xác nhận thành công.",
+      "paidTimeline2": "Đơn hàng đã chuyển sang trạng thái đã xác nhận trong hệ thống.",
+      "paidTimeline3": "Bạn có thể theo dõi chi tiết đơn trong trang tài khoản của mình.",
+      "orderTimeline1": "Đơn hàng đã được lưu vào hệ thống của cửa hàng.",
+      "orderTimeline2": "Nhân viên sẽ liên hệ để xác nhận tình trạng hàng và thời gian nhận/giao.",
+      "orderTimeline3": "Bạn vẫn có thể theo dõi chi tiết đơn trong trang tài khoản của mình.",
+      "paidPanelTitle": "Thanh toán đã hoàn tất!",
+      "orderPanelTitle": "Cảm ơn bạn!",
+      "paidPanelDescription": "Thông tin thanh toán và đơn hàng đã được cập nhật thành công. Cửa hàng sẽ xử lý đơn nhanh nhất có thể.",
+      "orderPanelDescription": "Thông tin đơn hàng của bạn đã được ghi nhận thành công. Chúng tôi sẽ xử lý nhanh nhất có thể."
+    },
+    "failed": {
+      "badge": "Thanh toán thất bại",
+      "title": "Thanh toán chưa hoàn tất",
+      "descriptionPrefix": "Hệ thống chưa ghi nhận thanh toán thành công cho",
+      "statusWithCode": "Thanh toán lỗi · Mã {code}",
+      "pendingStatus": "Chờ thanh toán / cần kiểm tra",
+      "panelTitle": "Giao dịch cần được kiểm tra",
+      "authenticatedHint": "Bạn có thể mở trang đơn hàng để kiểm tra lại trạng thái và thanh toán lại nếu cần.",
+      "guestHint": "Nếu bạn thanh toán với tư cách khách, hãy lưu lại mã đơn hàng để cửa hàng hỗ trợ kiểm tra giao dịch.",
+      "supportHint": "Nếu tiền đã bị trừ nhưng trạng thái chưa cập nhật, hãy liên hệ cửa hàng để được hỗ trợ nhanh hơn.",
+      "authenticatedPanelDescription": "Bạn có thể kiểm tra đơn hàng trong tài khoản và thanh toán lại đúng đơn nếu giao dịch chưa hoàn tất.",
+      "guestPanelDescription": "Đơn hàng có thể vẫn được lưu lại. Vui lòng lưu mã đơn hàng và liên hệ cửa hàng nếu cần kiểm tra hoặc hỗ trợ thanh toán lại.",
+      "defaultReason": "Giao dịch chưa được xác nhận thành công. Vui lòng kiểm tra lại hoặc liên hệ cửa hàng nếu cần hỗ trợ.",
+      "reasons": {
+        "invalidSignature": "Giao dịch không thể xác thực an toàn. Vui lòng thử lại hoặc liên hệ cửa hàng để được hỗ trợ.",
+        "missingOrder": "Cổng thanh toán chưa gửi đủ thông tin đơn hàng. Vui lòng lưu mã đơn và liên hệ cửa hàng để kiểm tra.",
+        "orderNotFound": "Hệ thống chưa tìm thấy đơn hàng tương ứng. Vui lòng lưu mã đơn và liên hệ cửa hàng để được hỗ trợ.",
+        "invalidPaymentMethod": "Phương thức thanh toán của đơn hàng không khớp. Vui lòng chọn lại phương thức thanh toán phù hợp.",
+        "invalidAmount": "Số tiền thanh toán chưa khớp với tổng đơn hàng. Vui lòng không thanh toán lại ngay nếu tiền đã bị trừ."
+      },
+      "codes": {
+        "07": "Giao dịch có dấu hiệu cần kiểm tra thêm từ ngân hàng. Vui lòng liên hệ cửa hàng nếu tiền đã bị trừ.",
+        "09": "Thẻ hoặc tài khoản của bạn chưa được đăng ký dịch vụ thanh toán trực tuyến.",
+        "10": "Thông tin xác thực thanh toán chưa đúng. Vui lòng kiểm tra lại và thử lại sau.",
+        "11": "Giao dịch đã hết thời gian chờ thanh toán. Bạn có thể thực hiện lại nếu vẫn muốn mua hàng.",
+        "12": "Thẻ hoặc tài khoản của bạn đang bị khóa nên chưa thể thanh toán.",
+        "13": "Mã xác thực giao dịch chưa chính xác. Vui lòng kiểm tra lại thông tin từ ngân hàng.",
+        "24": "Bạn đã hủy giao dịch hoặc rời khỏi cổng thanh toán trước khi hoàn tất.",
+        "51": "Tài khoản của bạn không đủ số dư để hoàn tất thanh toán.",
+        "65": "Tài khoản đã vượt quá hạn mức thanh toán trong ngày.",
+        "75": "Ngân hàng thanh toán đang tạm thời bảo trì. Vui lòng thử lại sau.",
+        "79": "Bạn đã nhập sai thông tin xác thực quá nhiều lần. Vui lòng thử lại sau hoặc liên hệ ngân hàng.",
+        "99": "Giao dịch chưa hoàn tất do lỗi từ cổng thanh toán hoặc ngân hàng. Vui lòng thử lại sau."
+      }
+    }
+  }
+}
