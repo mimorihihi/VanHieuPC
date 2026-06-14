@@ -76,7 +76,13 @@ export default function PaymentFailedPage() {
         </>
       }
       orderNumber={orderNumber}
-      statusLabel={code ? failedT("statusWithCode", { code }) : failedT("pendingStatus")}
+      statusLabel={
+        code === "24"
+          ? failedT("cancelledStatus")
+          : code
+            ? failedT("statusWithCode", { code })
+            : failedT("pendingStatus")
+      }
       timeline={[
         failureReason,
         isAuthenticated

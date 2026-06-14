@@ -181,7 +181,7 @@ export default function CartPage() {
     }, 0)
   }, [authUser, guestItems, items, qtyDraft])
 
-  const shipping = subtotal > 0 ? 30000 : 0
+  const shipping = 0
   const vat = subtotal * 0.1
   const discountAmount = Math.floor(calculateDiscount(subtotal, appliedCoupon))
   const orderTotal = subtotal + shipping + vat - discountAmount

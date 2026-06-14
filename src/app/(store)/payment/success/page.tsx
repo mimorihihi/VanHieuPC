@@ -1,8 +1,9 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { ArrowLeft, Package, Sparkles } from "lucide-react"
+import { ArrowLeft, Package, ShoppingCart, Sparkles } from "lucide-react"
 import { PaymentStatusLayout } from "@/components/payment-status-layout"
 import successCheckmark from "@/components/dashboard/success-checkmark.json"
 
@@ -12,8 +13,30 @@ export default function PaymentSuccessPage() {
   const successT = useTranslations("Payment.success")
   const actionsT = useTranslations("Payment.actions")
   const orderNumber = searchParams.get("order")?.trim() || t("orderFallback")
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   const isPaymentSuccess = searchParams.get("code") === "00"
+
+  useEffect(() => {
+    let mounted = true
+
+    void (async () => {
+      try {
+        const response = await fetch("/api/me", { cache: "no-store" })
+        if (mounted) {
+          setIsAuthenticated(response.ok)
+        }
+      } catch {
+        if (mounted) {
+          setIsAuthenticated(false)
+        }
+      }
+    })()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   return (
     <PaymentStatusLayout
@@ -49,20 +72,37 @@ export default function PaymentSuccessPage() {
               successT("orderTimeline3"),
             ]
       }
-      actions={[
-        {
-          href: "/dashboard",
-          label: actionsT("viewMyOrders"),
-          icon: Package,
-          variant: "primary",
-        },
-        {
-          href: "/",
-          label: actionsT("continueShopping"),
-          icon: ArrowLeft,
-          variant: "secondary",
-        },
-      ]}
+      actions={
+        isAuthenticated
+          ? [
+              {
+                href: "/dashboard",
+                label: actionsT("viewMyOrders"),
+                icon: Package,
+                variant: "primary",
+              },
+              {
+                href: "/products",
+                label: actionsT("continueShopping"),
+                icon: ShoppingCart,
+                variant: "secondary",
+              },
+            ]
+          : [
+              {
+                href: "/",
+                label: actionsT("home"),
+                icon: ArrowLeft,
+                variant: "primary",
+              },
+              {
+                href: "/products",
+                label: actionsT("continueShopping"),
+                icon: ShoppingCart,
+                variant: "secondary",
+              },
+            ]
+      }
       panelTitle={isPaymentSuccess ? successT("paidPanelTitle") : successT("orderPanelTitle")}
       panelDescription={
         isPaymentSuccess

@@ -38,6 +38,7 @@
       "title": "Thanh toán chưa hoàn tất",
       "descriptionPrefix": "Hệ thống chưa ghi nhận thanh toán thành công cho",
       "statusWithCode": "Thanh toán lỗi · Mã {code}",
+      "cancelledStatus": "Đã hủy thanh toán · Mã 24",
       "pendingStatus": "Chờ thanh toán / cần kiểm tra",
       "panelTitle": "Giao dịch cần được kiểm tra",
       "authenticatedHint": "Bạn có thể mở trang đơn hàng để kiểm tra lại trạng thái và thanh toán lại nếu cần.",

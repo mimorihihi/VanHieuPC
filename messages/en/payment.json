@@ -38,6 +38,7 @@
       "title": "Payment not completed",
       "descriptionPrefix": "The system has not recorded a successful payment for",
       "statusWithCode": "Payment failed · Code {code}",
+      "cancelledStatus": "Payment cancelled · Code 24",
       "pendingStatus": "Awaiting payment / needs review",
       "panelTitle": "Transaction needs review",
       "authenticatedHint": "You can open your order page to check the status and pay again if needed.",
