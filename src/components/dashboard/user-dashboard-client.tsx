@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { useTranslations } from "next-intl"
 import {
   ChevronRight,
   Heart,
@@ -119,12 +120,12 @@ type AddressForm = {
   is_default: boolean
 }
 
-const tabs: Array<{ id: DashboardTab; label: string; icon: typeof LayoutDashboard }> = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "profile", label: "Profile", icon: UserRound },
-  { id: "orders", label: "Orders", icon: Package },
-  { id: "wishlist", label: "Wishlist", icon: Heart },
-  { id: "addresses", label: "Addresses", icon: MapPinned },
+const tabs: Array<{ id: DashboardTab; labelKey: string; icon: typeof LayoutDashboard }> = [
+  { id: "overview", labelKey: "overview", icon: LayoutDashboard },
+  { id: "profile", labelKey: "profile", icon: UserRound },
+  { id: "orders", labelKey: "orders", icon: Package },
+  { id: "wishlist", labelKey: "wishlist", icon: Heart },
+  { id: "addresses", labelKey: "addresses", icon: MapPinned },
 ]
 
 function formatMoney(value: string | number) {
@@ -169,6 +170,14 @@ async function loadAuthUser() {
 export function UserDashboardClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const commonT = useTranslations("Dashboard.common")
+  const tabsT = useTranslations("Dashboard.tabs")
+  const summaryT = useTranslations("Dashboard.summary")
+  const profileT = useTranslations("Dashboard.profile")
+  const ordersT = useTranslations("Dashboard.orders")
+  const wishlistT = useTranslations("Dashboard.wishlist")
+  const addressesT = useTranslations("Dashboard.addresses")
+  const errorsT = useTranslations("Dashboard.errors")
   const [user, setUser] = useState<AuthUser | null>(null)
   const [ready, setReady] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -257,11 +266,11 @@ export function UserDashboardClient() {
         setAddresses(data.addresses ?? [])
       }
     } catch {
-      setError("Unable to load dashboard data.")
+      setError(errorsT("loadDashboard"))
     } finally {
       setLoading(false)
     }
-  }, [syncUser])
+  }, [errorsT, syncUser])
 
   useEffect(() => {
     void (async () => {
@@ -317,7 +326,7 @@ export function UserDashboardClient() {
       })
       const data = await response.json()
       if (!response.ok) {
-        setError(data.error ?? "Failed to save profile.")
+        setError(data.error ?? errorsT("saveProfile"))
         return
       }
 
@@ -338,7 +347,7 @@ export function UserDashboardClient() {
       const response = await fetch(`/api/me/orders/${orderId}?user_id=${encodeURIComponent(user.id)}`)
       const data = await response.json()
       if (!response.ok) {
-        setError(data.error ?? "Unable to load order.")
+        setError(data.error ?? errorsT("loadOrder"))
         return
       }
       const order = data.order ?? null
@@ -371,7 +380,7 @@ export function UserDashboardClient() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error ?? "Unable to retry payment.")
+        setError(data.error ?? errorsT("retryPayment"))
         return
       }
 
@@ -416,7 +425,7 @@ export function UserDashboardClient() {
       })
       const data = await response.json()
       if (!response.ok) {
-        setError(data.error ?? "Unable to save review.")
+        setError(data.error ?? errorsT("saveReview"))
         return
       }
       await handleOpenOrder(selectedOrder.id)
@@ -496,7 +505,7 @@ export function UserDashboardClient() {
       )
       const data = await response.json()
       if (!response.ok) {
-        setError(data.error ?? "Unable to save address.")
+        setError(data.error ?? errorsT("saveAddress"))
         return
       }
 
@@ -535,23 +544,23 @@ export function UserDashboardClient() {
         <section className="container mx-auto px-4 py-10">
           <div className="mb-4 flex items-center gap-2 text-[11px] text-zinc-500">
             <Link href="/" className="hover:text-blue-600">
-              Home
+              {commonT("home")}
             </Link>
             <span>&bull;</span>
-            <span className="text-zinc-700">My Dashboard</span>
+            <span className="text-zinc-700">{commonT("title")}</span>
           </div>
 
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h1 className="text-4xl font-semibold tracking-tight text-zinc-900">My Dashboard</h1>
-              <p className="mt-2 text-sm text-zinc-500">Manage your account, orders, wishlist, and addresses.</p>
+              <h1 className="text-4xl font-semibold tracking-tight text-zinc-900">{commonT("title")}</h1>
+              <p className="mt-2 text-sm text-zinc-500">{commonT("subtitle")}</p>
             </div>
             <button
               onClick={handleLogout}
               className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-300 px-5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100"
             >
               <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
+              {commonT("signOut")}
             </button>
           </div>
 
@@ -579,20 +588,20 @@ export function UserDashboardClient() {
                       }`}
                     >
                       <Icon className="h-4 w-4" />
-                      {item.label}
+                      {tabsT(item.labelKey)}
                     </button>
                   )
                 })}
               </div>
 
               <div className="rounded bg-zinc-100 p-4 text-center">
-                <h3 className="text-sm font-semibold text-zinc-900">Wishlist</h3>
-                <p className="mt-3 text-xs text-zinc-500">{summary.wishlist} saved items</p>
+                <h3 className="text-sm font-semibold text-zinc-900">{tabsT("wishlist")}</h3>
+                <p className="mt-3 text-xs text-zinc-500">{summaryT("savedItems", { count: summary.wishlist })}</p>
               </div>
 
               <div className="rounded bg-zinc-100 p-4 text-center">
-                <h3 className="text-sm font-semibold text-zinc-900">Orders</h3>
-                <p className="mt-3 text-xs text-zinc-500">{summary.orders} orders placed</p>
+                <h3 className="text-sm font-semibold text-zinc-900">{tabsT("orders")}</h3>
+                <p className="mt-3 text-xs text-zinc-500">{summaryT("ordersPlaced", { count: summary.orders })}</p>
               </div>
             </aside>
 
@@ -601,7 +610,7 @@ export function UserDashboardClient() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h2 className="text-xl font-semibold text-zinc-900">
-                      {tabs.find((item) => item.id === activeTab)?.label ?? "Overview"}
+                      {tabsT(tabs.find((item) => item.id === activeTab)?.labelKey ?? "overview")}
                     </h2>
                     <p className="mt-1 text-sm text-zinc-500">{user.name} · {user.email}</p>
                   </div>
@@ -610,33 +619,33 @@ export function UserDashboardClient() {
                     className="inline-flex h-9 items-center rounded-full border border-zinc-300 px-4 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100"
                   >
                     <RefreshCw className="mr-2 h-4 w-4" />
-                    Refresh
+                    {commonT("refresh")}
                   </button>
                 </div>
 
                 {loading ? (
                   <div className="mt-6 flex items-center gap-2 text-sm text-zinc-500">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading dashboard...
+                    {commonT("loading")}
                   </div>
                 ) : null}
 
                 {activeTab === "overview" && !loading ? (
                   <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div className="rounded border border-zinc-200 bg-zinc-50 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Account</div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{summaryT("account")}</div>
                       <div className="mt-2 text-lg font-semibold text-zinc-900">{user.name}</div>
-                      <div className="mt-1 text-sm text-zinc-500">{user.phone || "No phone number"}</div>
+                      <div className="mt-1 text-sm text-zinc-500">{user.phone || summaryT("noPhone")}</div>
                     </div>
                     <div className="rounded border border-zinc-200 bg-zinc-50 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Orders</div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{tabsT("orders")}</div>
                       <div className="mt-2 text-lg font-semibold text-zinc-900">{summary.orders}</div>
-                      <div className="mt-1 text-sm text-zinc-500">Recent purchase history</div>
+                      <div className="mt-1 text-sm text-zinc-500">{summaryT("recentPurchaseHistory")}</div>
                     </div>
                     <div className="rounded border border-zinc-200 bg-zinc-50 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Addresses</div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{tabsT("addresses")}</div>
                       <div className="mt-2 text-lg font-semibold text-zinc-900">{summary.addresses}</div>
-                      <div className="mt-1 text-sm text-zinc-500">Saved delivery locations</div>
+                      <div className="mt-1 text-sm text-zinc-500">{summaryT("savedDeliveryLocations")}</div>
                     </div>
                   </div>
                 ) : null}
@@ -644,7 +653,7 @@ export function UserDashboardClient() {
                 {activeTab === "profile" ? (
                   <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
                     <label className="space-y-1.5">
-                      <span className="text-xs font-semibold text-zinc-700">Name</span>
+                      <span className="text-xs font-semibold text-zinc-700">{profileT("name")}</span>
                       <input
                         value={profileForm.name}
                         onChange={(event) => setProfileForm((prev) => ({ ...prev, name: event.target.value }))}
@@ -652,7 +661,7 @@ export function UserDashboardClient() {
                       />
                     </label>
                     <label className="space-y-1.5">
-                      <span className="text-xs font-semibold text-zinc-700">Phone</span>
+                      <span className="text-xs font-semibold text-zinc-700">{profileT("phone")}</span>
                       <input
                         value={profileForm.phone}
                         onChange={(event) => setProfileForm((prev) => ({ ...prev, phone: event.target.value }))}
@@ -660,7 +669,7 @@ export function UserDashboardClient() {
                       />
                     </label>
                     <label className="space-y-1.5 md:col-span-2">
-                      <span className="text-xs font-semibold text-zinc-700">Avatar URL</span>
+                      <span className="text-xs font-semibold text-zinc-700">{profileT("avatarUrl")}</span>
                       <input
                         value={profileForm.avatar_url}
                         onChange={(event) => setProfileForm((prev) => ({ ...prev, avatar_url: event.target.value }))}
@@ -674,7 +683,7 @@ export function UserDashboardClient() {
                         className="inline-flex h-10 items-center rounded-full bg-blue-600 px-5 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {savingProfile ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                        Save Profile
+                        {profileT("saveProfile")}
                       </button>
                     </div>
                   </div>
@@ -683,7 +692,7 @@ export function UserDashboardClient() {
                 {activeTab === "orders" ? (
                   <div className="mt-6 space-y-4">
                     {orders.length === 0 ? (
-                      <p className="text-sm text-zinc-500">No orders found.</p>
+                      <p className="text-sm text-zinc-500">{ordersT("empty")}</p>
                     ) : (
                       orders.map((order) => (
                         <div key={order.id} className="rounded border border-zinc-200 bg-zinc-50 p-4">
@@ -691,7 +700,7 @@ export function UserDashboardClient() {
                             <div>
                               <div className="text-sm font-semibold text-zinc-900">{order.order_number}</div>
                               <div className="mt-1 text-xs text-zinc-500">
-                                {formatDate(order.created_at)} · {order.item_count} items
+                                {formatDate(order.created_at)} · {order.item_count} {commonT("items")}
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -702,7 +711,7 @@ export function UserDashboardClient() {
                             </div>
                           </div>
                            <div className="mt-4 flex flex-col gap-3 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
-                             <span>Payment: {order.payment_status}</span>
+                             <span>{commonT("payment")}: {order.payment_status}</span>
                              <div className="flex flex-wrap items-center gap-3">
                                {order.payment_method === "VNPAY" && order.payment_status !== "PAID" ? (
                                  <button
@@ -711,14 +720,14 @@ export function UserDashboardClient() {
                                    disabled={retryingPaymentId === order.id}
                                    className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
                                  >
-                                   {retryingPaymentId === order.id ? "Đang mở thanh toán..." : "Thanh toán lại"}
+                                   {retryingPaymentId === order.id ? ordersT("openingPayment") : ordersT("retryPayment")}
                                  </button>
                                ) : null}
                                <button
                                  onClick={() => void handleOpenOrder(order.id)}
                                  className="inline-flex items-center gap-1 font-semibold text-blue-600 hover:underline"
                                >
-                                 {loadingOrderId === order.id ? "Loading..." : "View details"}
+                                 {loadingOrderId === order.id ? commonT("loadingShort") : ordersT("viewDetails")}
                                  <ChevronRight className="h-3 w-3" />
                                </button>
                              </div>
@@ -730,7 +739,7 @@ export function UserDashboardClient() {
                     {selectedOrder ? (
                       <div className="rounded border border-zinc-200 bg-white p-5">
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                          <h3 className="text-sm font-semibold text-zinc-900">Order Details</h3>
+                          <h3 className="text-sm font-semibold text-zinc-900">{ordersT("detailsTitle")}</h3>
                           <span className="text-xs text-zinc-500">{selectedOrder.order_number}</span>
                         </div>
                           <div className="mt-4 space-y-4">
@@ -753,11 +762,11 @@ export function UserDashboardClient() {
                                     <div className="min-w-0 flex-1">
                                       <div className="text-sm font-medium text-zinc-900">{item.product_name}</div>
                                       <div className="mt-1 text-xs text-zinc-500">
-                                        Qty {item.quantity} · {formatMoney(item.unit_price)} đ
+                                        {ordersT("qty")} {item.quantity} · {formatMoney(item.unit_price)} đ
                                       </div>
                                       {item.review ? (
                                         <div className="mt-1 text-[11px] font-semibold text-emerald-700">
-                                          Đã đánh giá · {item.review.status}
+                                          {ordersT("reviewed")} · {item.review.status}
                                         </div>
                                       ) : null}
                                     </div>
@@ -767,7 +776,7 @@ export function UserDashboardClient() {
                                     <div className="mt-3 rounded border border-zinc-200 bg-zinc-50 p-3">
                                       <div className="mb-2 flex items-center justify-between gap-3">
                                         <span className="text-xs font-semibold text-zinc-700">
-                                          {item.review ? "Cập nhật đánh giá" : "Đánh giá sản phẩm"}
+                                          {item.review ? ordersT("updateReview") : ordersT("reviewProduct")}
                                         </span>
                                         <div className="flex items-center gap-1">
                                           {[1, 2, 3, 4, 5].map((value) => (
@@ -776,7 +785,7 @@ export function UserDashboardClient() {
                                               type="button"
                                               onClick={() => handleReviewFormChange(item.product_id, "rating", value)}
                                               className="rounded-full p-0.5 hover:bg-white"
-                                              aria-label={`Chọn ${value} sao`}
+                                              aria-label={ordersT("chooseStars", { count: value })}
                                             >
                                               <Star
                                                 className={`h-4 w-4 ${
@@ -791,7 +800,7 @@ export function UserDashboardClient() {
                                         value={form.comment}
                                         onChange={(event) => handleReviewFormChange(item.product_id, "comment", event.target.value)}
                                         rows={3}
-                                        placeholder="Nhập nhận xét của bạn..."
+                                        placeholder={ordersT("reviewPlaceholder")}
                                         className="w-full resize-none rounded border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-blue-600"
                                       />
                                       <button
@@ -800,12 +809,12 @@ export function UserDashboardClient() {
                                         disabled={savingReviewKey === savingKey}
                                         className="mt-2 inline-flex h-9 items-center rounded-full bg-blue-600 px-4 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                                       >
-                                        {savingReviewKey === savingKey ? "Đang lưu..." : item.review ? "Cập nhật đánh giá" : "Gửi đánh giá"}
+                                        {savingReviewKey === savingKey ? ordersT("saving") : item.review ? ordersT("updateReview") : ordersT("submitReview")}
                                       </button>
                                     </div>
                                   ) : (
                                     <p className="mt-2 text-xs text-zinc-500">
-                                      Bạn có thể đánh giá sau khi đơn hàng hoàn tất.
+                                      {ordersT("canReviewAfterComplete")}
                                     </p>
                                   )}
                                 </div>
@@ -820,7 +829,7 @@ export function UserDashboardClient() {
                 {activeTab === "wishlist" ? (
                   <div className="mt-6 space-y-4">
                     {wishlist.length === 0 ? (
-                      <p className="text-sm text-zinc-500">Your wishlist is empty.</p>
+                      <p className="text-sm text-zinc-500">{wishlistT("empty")}</p>
                     ) : (
                       wishlist.map((item) => (
                         <div key={item.id} className="flex items-center gap-4 rounded border border-zinc-200 bg-zinc-50 p-4">
@@ -836,7 +845,7 @@ export function UserDashboardClient() {
                               {item.product_name}
                             </Link>
                             <div className="mt-1 text-xs text-zinc-500">
-                              {item.brand_name || "Brand"} · {item.category_name || "Category"}
+                              {item.brand_name || commonT("brandFallback")} · {item.category_name || commonT("categoryFallback")}
                             </div>
                             <div className="mt-1 text-sm font-semibold text-zinc-900">
                               {formatMoney(item.sale_price ?? item.price)} đ
@@ -848,7 +857,7 @@ export function UserDashboardClient() {
                             className="inline-flex h-9 items-center rounded-full border border-zinc-300 px-4 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Remove
+                            {commonT("remove")}
                           </button>
                         </div>
                       ))
@@ -860,7 +869,7 @@ export function UserDashboardClient() {
                   <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
                     <div className="space-y-4">
                       {addresses.length === 0 ? (
-                        <p className="text-sm text-zinc-500">No saved addresses yet.</p>
+                        <p className="text-sm text-zinc-500">{addressesT("empty")}</p>
                       ) : (
                         addresses.map((address) => (
                           <div key={address.id} className="rounded border border-zinc-200 bg-zinc-50 p-4">
@@ -870,7 +879,7 @@ export function UserDashboardClient() {
                                   <h3 className="text-sm font-semibold text-zinc-900">{address.full_name}</h3>
                                   {address.is_default ? (
                                     <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                                      Default
+                                      {commonT("default")}
                                     </span>
                                   ) : null}
                                 </div>
@@ -885,14 +894,14 @@ export function UserDashboardClient() {
                                   className="inline-flex h-9 items-center rounded-full border border-zinc-300 px-4 text-xs font-semibold text-zinc-700 hover:bg-zinc-100"
                                 >
                                   <PencilLine className="mr-2 h-4 w-4" />
-                                  Edit
+                                  {commonT("edit")}
                                 </button>
                                 <button
                                   onClick={() => void handleDeleteAddress(address.id)}
                                   className="inline-flex h-9 items-center rounded-full border border-zinc-300 px-4 text-xs font-semibold text-zinc-700 hover:bg-zinc-100"
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete
+                                  {commonT("delete")}
                                 </button>
                               </div>
                             </div>
@@ -904,14 +913,14 @@ export function UserDashboardClient() {
                     <div className="rounded border border-zinc-200 bg-white p-5">
                       <div className="flex items-center justify-between gap-3">
                         <h3 className="text-sm font-semibold text-zinc-900">
-                          {editingAddressId ? "Edit Address" : "Add Address"}
+                          {editingAddressId ? addressesT("editTitle") : addressesT("addTitle")}
                         </h3>
                         {editingAddressId ? (
                           <button
                             onClick={resetAddressForm}
                             className="text-xs font-semibold text-blue-600 hover:underline"
                           >
-                            Cancel
+                            {commonT("cancel")}
                           </button>
                         ) : null}
                       </div>
@@ -920,37 +929,37 @@ export function UserDashboardClient() {
                         <input
                           value={addressForm.full_name}
                           onChange={(event) => setAddressForm((prev) => ({ ...prev, full_name: event.target.value }))}
-                          placeholder="Full name"
+                          placeholder={addressesT("fullName")}
                           className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                         />
                         <input
                           value={addressForm.phone}
                           onChange={(event) => setAddressForm((prev) => ({ ...prev, phone: event.target.value }))}
-                          placeholder="Phone"
+                          placeholder={addressesT("phone")}
                           className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                         />
                         <input
                           value={addressForm.province}
                           onChange={(event) => setAddressForm((prev) => ({ ...prev, province: event.target.value }))}
-                          placeholder="Province / City"
+                          placeholder={addressesT("province")}
                           className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                         />
                         <input
                           value={addressForm.district}
                           onChange={(event) => setAddressForm((prev) => ({ ...prev, district: event.target.value }))}
-                          placeholder="District"
+                          placeholder={addressesT("district")}
                           className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                         />
                         <input
                           value={addressForm.ward}
                           onChange={(event) => setAddressForm((prev) => ({ ...prev, ward: event.target.value }))}
-                          placeholder="Ward"
+                          placeholder={addressesT("ward")}
                           className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                         />
                         <input
                           value={addressForm.address_line}
                           onChange={(event) => setAddressForm((prev) => ({ ...prev, address_line: event.target.value }))}
-                          placeholder="Address line"
+                          placeholder={addressesT("addressLine")}
                           className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
                         />
                         <label className="flex items-center gap-2 text-xs font-semibold text-zinc-700">
@@ -960,7 +969,7 @@ export function UserDashboardClient() {
                             onChange={(event) => setAddressForm((prev) => ({ ...prev, is_default: event.target.checked }))}
                             className="h-4 w-4 accent-blue-600"
                           />
-                          Set as default address
+                          {addressesT("setDefault")}
                         </label>
                         <button
                           onClick={handleAddressSave}
@@ -968,7 +977,7 @@ export function UserDashboardClient() {
                           className="inline-flex h-10 w-full items-center justify-center rounded-full bg-blue-600 px-5 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {savingAddress ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-                          {editingAddressId ? "Update Address" : "Save Address"}
+                          {editingAddressId ? addressesT("update") : addressesT("save")}
                         </button>
                       </div>
                     </div>
@@ -980,9 +989,9 @@ export function UserDashboardClient() {
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="rounded border border-zinc-200 bg-white p-5">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-zinc-900">Recent Orders</h3>
+                      <h3 className="text-sm font-semibold text-zinc-900">{ordersT("recentOrders")}</h3>
                       <button onClick={() => setActiveTab("orders")} className="text-xs font-semibold text-blue-600 hover:underline">
-                        View all
+                        {commonT("viewAll")}
                       </button>
                     </div>
                     <div className="mt-4 space-y-3">
@@ -995,15 +1004,15 @@ export function UserDashboardClient() {
                           <div className="text-sm font-semibold text-zinc-900">{formatMoney(order.total)} đ</div>
                         </div>
                       ))}
-                      {orders.length === 0 ? <p className="text-sm text-zinc-500">No recent orders.</p> : null}
+                      {orders.length === 0 ? <p className="text-sm text-zinc-500">{ordersT("noRecentOrders")}</p> : null}
                     </div>
                   </div>
 
                   <div className="rounded border border-zinc-200 bg-white p-5">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-zinc-900">Wishlist Preview</h3>
+                      <h3 className="text-sm font-semibold text-zinc-900">{wishlistT("preview")}</h3>
                       <button onClick={() => setActiveTab("wishlist")} className="text-xs font-semibold text-blue-600 hover:underline">
-                        View all
+                        {commonT("viewAll")}
                       </button>
                     </div>
                     <div className="mt-4 space-y-3">
@@ -1011,12 +1020,12 @@ export function UserDashboardClient() {
                         <div key={item.id} className="flex items-center justify-between gap-3 border-b border-zinc-100 pb-3 last:border-b-0 last:pb-0">
                           <div className="min-w-0">
                             <div className="line-clamp-1 text-sm font-medium text-zinc-900">{item.product_name}</div>
-                            <div className="mt-1 text-xs text-zinc-500">{item.brand_name || "Brand"}</div>
+                            <div className="mt-1 text-xs text-zinc-500">{item.brand_name || commonT("brandFallback")}</div>
                           </div>
                           <div className="text-sm font-semibold text-zinc-900">{formatMoney(item.sale_price ?? item.price)} đ</div>
                         </div>
                       ))}
-                      {wishlist.length === 0 ? <p className="text-sm text-zinc-500">No wishlist items.</p> : null}
+                      {wishlist.length === 0 ? <p className="text-sm text-zinc-500">{wishlistT("noItems")}</p> : null}
                     </div>
                   </div>
                 </div>

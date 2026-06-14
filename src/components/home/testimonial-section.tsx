@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useTranslations } from "next-intl"
 
 export interface Testimonial {
   id: string
@@ -19,6 +20,7 @@ export function Testimotion({
   reviewHref = "#",
   className = "",
 }: TestimonialSectionProps) {
+  const t = useTranslations("Home")
   const [activeIndex, setActiveIndex] = useState(0)
 
   useEffect(() => {
@@ -56,13 +58,13 @@ export function Testimotion({
             href={reviewHref}
             className="inline-block rounded border border-zinc-300 px-5 py-2 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100"
           >
-            Leave Us A Review
+            {t("leaveReview")}
           </a>
           <a
             href={reviewHref}
             className="inline-block rounded border border-zinc-300 px-5 py-2 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100"
           >
-            Read All Reviews
+            {t("readReviews")}
           </a>
         </div>
 

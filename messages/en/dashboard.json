@@ -1,0 +1,90 @@
+{
+  "Dashboard": {
+    "tabs": {
+      "overview": "Overview",
+      "profile": "Profile",
+      "orders": "Orders",
+      "wishlist": "Wishlist",
+      "addresses": "Addresses"
+    },
+    "common": {
+      "home": "Home",
+      "title": "My Dashboard",
+      "subtitle": "Manage your account, orders, wishlist, and addresses.",
+      "signOut": "Sign Out",
+      "refresh": "Refresh",
+      "loading": "Loading dashboard...",
+      "viewAll": "View all",
+      "brandFallback": "Brand",
+      "categoryFallback": "Category",
+      "items": "items",
+      "payment": "Payment",
+      "loadingShort": "Loading...",
+      "save": "Save",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "delete": "Delete",
+      "remove": "Remove",
+      "default": "Default"
+    },
+    "summary": {
+      "savedItems": "{count} saved items",
+      "ordersPlaced": "{count} orders placed",
+      "account": "Account",
+      "noPhone": "No phone number",
+      "recentPurchaseHistory": "Recent purchase history",
+      "savedDeliveryLocations": "Saved delivery locations"
+    },
+    "profile": {
+      "name": "Name",
+      "phone": "Phone",
+      "avatarUrl": "Avatar URL",
+      "saveProfile": "Save Profile"
+    },
+    "orders": {
+      "empty": "No orders found.",
+      "retryPayment": "Retry payment",
+      "openingPayment": "Opening payment...",
+      "viewDetails": "View details",
+      "detailsTitle": "Order Details",
+      "qty": "Qty",
+      "reviewed": "Reviewed",
+      "updateReview": "Update review",
+      "reviewProduct": "Review product",
+      "chooseStars": "Choose {count} stars",
+      "reviewPlaceholder": "Enter your review...",
+      "saving": "Saving...",
+      "submitReview": "Submit review",
+      "canReviewAfterComplete": "You can review after the order is completed.",
+      "recentOrders": "Recent Orders",
+      "noRecentOrders": "No recent orders."
+    },
+    "wishlist": {
+      "empty": "Your wishlist is empty.",
+      "preview": "Wishlist Preview",
+      "noItems": "No wishlist items."
+    },
+    "addresses": {
+      "empty": "No saved addresses yet.",
+      "editTitle": "Edit Address",
+      "addTitle": "Add Address",
+      "fullName": "Full name",
+      "phone": "Phone",
+      "province": "Province / City",
+      "district": "District",
+      "ward": "Ward",
+      "addressLine": "Address line",
+      "setDefault": "Set as default address",
+      "update": "Update Address",
+      "save": "Save Address"
+    },
+    "errors": {
+      "loadDashboard": "Unable to load dashboard data.",
+      "saveProfile": "Failed to save profile.",
+      "loadOrder": "Unable to load order.",
+      "retryPayment": "Unable to retry payment.",
+      "saveReview": "Unable to save review.",
+      "saveAddress": "Unable to save address."
+    }
+  }
+}

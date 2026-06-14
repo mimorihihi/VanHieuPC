@@ -1,0 +1,90 @@
+{
+  "Dashboard": {
+    "tabs": {
+      "overview": "Tổng quan",
+      "profile": "Hồ sơ",
+      "orders": "Đơn hàng",
+      "wishlist": "Yêu thích",
+      "addresses": "Địa chỉ"
+    },
+    "common": {
+      "home": "Trang chủ",
+      "title": "Bảng điều khiển của tôi",
+      "subtitle": "Quản lý tài khoản, đơn hàng, danh sách yêu thích và địa chỉ của bạn.",
+      "signOut": "Đăng xuất",
+      "refresh": "Tải lại",
+      "loading": "Đang tải bảng điều khiển...",
+      "viewAll": "Xem tất cả",
+      "brandFallback": "Thương hiệu",
+      "categoryFallback": "Danh mục",
+      "items": "sản phẩm",
+      "payment": "Thanh toán",
+      "loadingShort": "Đang tải...",
+      "save": "Lưu",
+      "cancel": "Hủy",
+      "edit": "Sửa",
+      "delete": "Xóa",
+      "remove": "Xóa",
+      "default": "Mặc định"
+    },
+    "summary": {
+      "savedItems": "{count} sản phẩm đã lưu",
+      "ordersPlaced": "{count} đơn hàng đã đặt",
+      "account": "Tài khoản",
+      "noPhone": "Chưa có số điện thoại",
+      "recentPurchaseHistory": "Lịch sử mua hàng gần đây",
+      "savedDeliveryLocations": "Địa chỉ giao hàng đã lưu"
+    },
+    "profile": {
+      "name": "Tên",
+      "phone": "Số điện thoại",
+      "avatarUrl": "URL ảnh đại diện",
+      "saveProfile": "Lưu hồ sơ"
+    },
+    "orders": {
+      "empty": "Chưa có đơn hàng.",
+      "retryPayment": "Thanh toán lại",
+      "openingPayment": "Đang mở thanh toán...",
+      "viewDetails": "Xem chi tiết",
+      "detailsTitle": "Chi tiết đơn hàng",
+      "qty": "SL",
+      "reviewed": "Đã đánh giá",
+      "updateReview": "Cập nhật đánh giá",
+      "reviewProduct": "Đánh giá sản phẩm",
+      "chooseStars": "Chọn {count} sao",
+      "reviewPlaceholder": "Nhập nhận xét của bạn...",
+      "saving": "Đang lưu...",
+      "submitReview": "Gửi đánh giá",
+      "canReviewAfterComplete": "Bạn có thể đánh giá sau khi đơn hàng hoàn tất.",
+      "recentOrders": "Đơn hàng gần đây",
+      "noRecentOrders": "Chưa có đơn hàng gần đây."
+    },
+    "wishlist": {
+      "empty": "Danh sách yêu thích đang trống.",
+      "preview": "Xem nhanh yêu thích",
+      "noItems": "Chưa có sản phẩm yêu thích."
+    },
+    "addresses": {
+      "empty": "Chưa có địa chỉ đã lưu.",
+      "editTitle": "Sửa địa chỉ",
+      "addTitle": "Thêm địa chỉ",
+      "fullName": "Họ và tên",
+      "phone": "Số điện thoại",
+      "province": "Tỉnh / Thành phố",
+      "district": "Quận / Huyện",
+      "ward": "Phường / Xã",
+      "addressLine": "Địa chỉ cụ thể",
+      "setDefault": "Đặt làm địa chỉ mặc định",
+      "update": "Cập nhật địa chỉ",
+      "save": "Lưu địa chỉ"
+    },
+    "errors": {
+      "loadDashboard": "Không thể tải dữ liệu bảng điều khiển.",
+      "saveProfile": "Không thể lưu hồ sơ.",
+      "loadOrder": "Không thể tải đơn hàng.",
+      "retryPayment": "Không thể thanh toán lại.",
+      "saveReview": "Không thể lưu đánh giá.",
+      "saveAddress": "Không thể lưu địa chỉ."
+    }
+  }
+}

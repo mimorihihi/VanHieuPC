@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { FormEvent, useState } from "react"
+import { useTranslations } from "next-intl"
 import { SiteHeader } from "@/components/site-header"
 import { SupportFeature } from "@/components/home/support-features"
 import { SiteFooter } from "@/components/site-footer"
@@ -19,6 +20,9 @@ type RegisterErrors = Partial<Record<keyof RegisterValues, string>>
 
 export default function RegisterPage() {
   const router = useRouter()
+  const commonT = useTranslations("Auth.common")
+  const registerT = useTranslations("Auth.register")
+  const validationT = useTranslations("Auth.validation")
   const [values, setValues] = useState<RegisterValues>({
     name: "",
     email: "",
@@ -42,29 +46,29 @@ export default function RegisterPage() {
     const nextErrors: RegisterErrors = {}
 
     if (!values.name.trim()) {
-      nextErrors.name = "Full name is required."
+      nextErrors.name = validationT("nameRequired")
     }
 
     if (!values.email.trim()) {
-      nextErrors.email = "Email is required."
+      nextErrors.email = validationT("emailRequired")
     } else if (!/\S+@\S+\.\S+/.test(values.email)) {
-      nextErrors.email = "Email format is invalid."
+      nextErrors.email = validationT("emailInvalid")
     }
 
     if (!values.password.trim()) {
-      nextErrors.password = "Password is required."
+      nextErrors.password = validationT("passwordRequired")
     } else if (values.password.length < 6) {
-      nextErrors.password = "Password must be at least 6 characters."
+      nextErrors.password = validationT("passwordMin")
     }
 
     if (!values.confirmPassword.trim()) {
-      nextErrors.confirmPassword = "Please confirm your password."
+      nextErrors.confirmPassword = validationT("confirmRequired")
     } else if (values.confirmPassword !== values.password) {
-      nextErrors.confirmPassword = "Confirm password does not match."
+      nextErrors.confirmPassword = validationT("confirmMismatch")
     }
 
     if (values.phone.trim() && !/^[0-9+\-\s()]{8,20}$/.test(values.phone)) {
-      nextErrors.phone = "Phone number format is invalid."
+      nextErrors.phone = validationT("phoneInvalid")
     }
 
     return nextErrors
@@ -97,14 +101,14 @@ export default function RegisterPage() {
 
         const data = await response.json()
         if (!response.ok) {
-          setFormError(data.error ?? "Register failed")
+          setFormError(data.error ?? registerT("fallbackError"))
           return
         }
 
-        setFormSuccess("Account created successfully. Redirecting to login...")
+        setFormSuccess(registerT("success"))
         setTimeout(() => router.push("/login"), 800)
       } catch {
-        setFormError("Cannot connect to server")
+        setFormError(commonT("cannotConnect"))
       } finally {
         setIsSubmitting(false)
       }
@@ -119,18 +123,18 @@ export default function RegisterPage() {
         <section className="container mx-auto px-4 py-10">
           <div className="mb-4 flex items-center gap-2 text-[11px] text-zinc-500">
             <Link href="/" className="hover:text-zinc-900">
-              Home
+              {commonT("home")}
             </Link>
             <span>&bull;</span>
-            <span className="text-zinc-700">Register</span>
+            <span className="text-zinc-700">{registerT("breadcrumb")}</span>
           </div>
 
-          <h1 className="mb-6 text-4xl font-semibold tracking-tight text-zinc-900">Create Account</h1>
+          <h1 className="mb-6 text-4xl font-semibold tracking-tight text-zinc-900">{registerT("title")}</h1>
 
           <div className="mx-auto w-full max-w-3xl rounded bg-zinc-100 p-6 sm:p-8">
-            <h2 className="text-lg font-semibold text-zinc-900">New Customer Registration</h2>
+            <h2 className="text-lg font-semibold text-zinc-900">{registerT("sectionTitle")}</h2>
             <p className="mt-2 text-xs text-zinc-600">
-              Fill in your information to create an account. Fields with <span className="text-red-500">*</span> are required.
+              {registerT("sectionDesc")}
             </p>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
@@ -143,12 +147,12 @@ export default function RegisterPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <label htmlFor="name" className="text-xs font-semibold text-zinc-900">
-                    Full Name <span className="text-red-500">*</span>
+                    {registerT("fullName")} <span className="text-red-500">{commonT("requiredMark")}</span>
                   </label>
                   <input
                     id="name"
                     type="text"
-                    placeholder="Your Full Name"
+                    placeholder={registerT("fullNamePlaceholder")}
                     value={values.name}
                     onChange={(event) => handleChange("name", event.target.value)}
                     className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900"
@@ -158,12 +162,12 @@ export default function RegisterPage() {
 
                 <div className="space-y-1.5">
                   <label htmlFor="email" className="text-xs font-semibold text-zinc-900">
-                    Email <span className="text-red-500">*</span>
+                    {commonT("email")} <span className="text-red-500">{commonT("requiredMark")}</span>
                   </label>
                   <input
                     id="email"
                     type="email"
-                    placeholder="Your Email"
+                    placeholder={registerT("emailPlaceholder")}
                     value={values.email}
                     onChange={(event) => handleChange("email", event.target.value)}
                     className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900"
@@ -175,12 +179,12 @@ export default function RegisterPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <label htmlFor="password" className="text-xs font-semibold text-zinc-900">
-                    Password <span className="text-red-500">*</span>
+                    {commonT("password")} <span className="text-red-500">{commonT("requiredMark")}</span>
                   </label>
                   <input
                     id="password"
                     type="password"
-                    placeholder="Create Password"
+                    placeholder={registerT("passwordPlaceholder")}
                     value={values.password}
                     onChange={(event) => handleChange("password", event.target.value)}
                     className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900"
@@ -190,12 +194,12 @@ export default function RegisterPage() {
 
                 <div className="space-y-1.5">
                   <label htmlFor="confirmPassword" className="text-xs font-semibold text-zinc-900">
-                    Confirm Password <span className="text-red-500">*</span>
+                    {registerT("confirmPassword")} <span className="text-red-500">{commonT("requiredMark")}</span>
                   </label>
                   <input
                     id="confirmPassword"
                     type="password"
-                    placeholder="Confirm Password"
+                    placeholder={registerT("confirmPasswordPlaceholder")}
                     value={values.confirmPassword}
                     onChange={(event) => handleChange("confirmPassword", event.target.value)}
                     className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900"
@@ -206,12 +210,12 @@ export default function RegisterPage() {
 
               <div className="space-y-1.5">
                 <label htmlFor="phone" className="text-xs font-semibold text-zinc-900">
-                  Phone Number
+                  {registerT("phone")}
                 </label>
                 <input
                   id="phone"
                   type="text"
-                  placeholder="Your Phone Number"
+                  placeholder={registerT("phonePlaceholder")}
                   value={values.phone}
                   onChange={(event) => handleChange("phone", event.target.value)}
                   className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900"
@@ -225,13 +229,13 @@ export default function RegisterPage() {
                   disabled={isSubmitting}
                   className="inline-flex h-11 items-center justify-center rounded-full bg-blue-600 px-8 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
                 >
-                  {isSubmitting ? "Creating..." : "Create Account"}
+                  {isSubmitting ? registerT("submitting") : registerT("submit")}
                 </button>
 
                 <p className="text-xs text-zinc-600">
-                  Already have an account?{" "}
+                  {registerT("alreadyHave")} {" "}
                   <Link href="/login" className="font-semibold text-zinc-900 hover:underline">
-                    Sign In
+                    {registerT("signIn")}
                   </Link>
                 </p>
               </div>

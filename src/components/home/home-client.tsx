@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { CategorySection } from "@/components/home/category-section"
 import { PromoBanner } from "@/components/home/promo-banner"
 import { CLOUDINARY_IMAGES } from "@/lib/cloudinary-images"
@@ -43,15 +44,16 @@ export function HomeClient({
   workstationProducts,
   monitorProducts,
 }: HomeClientProps) {
+  const t = useTranslations("Home")
   const fallbackSectionImage = CLOUDINARY_IMAGES.fallbackSection
 
   return (
     <>
       {/* 1. New Products — horizontal scroll */}
       <CategorySection
-        title="New Products"
+        title={t("newProducts")}
         seeAllHref="/products?sort=newest"
-        seeAllText="See All New Products"
+        seeAllText={t("seeAllNewProducts")}
         products={newProducts}
         maxItems={5}
         scrollable
@@ -63,56 +65,56 @@ export function HomeClient({
 
       {/* 3. PC Gaming */}
       <CategorySection
-        title="PC Gaming"
+        title={t("pcGaming")}
         products={gamingProducts}
         maxItems={4}
         featuredCard={{
-          title: "PC\nGaming",
+          title: t("pcGaming"),
           image: categoryImages.gaming ?? gamingProducts[0]?.thumbnail_url ?? fallbackSectionImage,
           href: `/products?category=${gamingCategorySlug}`,
-          buttonText: "Shop Gaming PCs",
+          buttonText: t("shopGamingPcs"),
         }}
         className="bg-white"
       />
 
       {/* 4. PC Đồ hoạ - Làm việc */}
       <CategorySection
-        title="PC Workstation"
+        title={t("pcWorkstation")}
         products={workstationProducts}
         maxItems={4}
         featuredCard={{
-          title: "PC Workstation",
+          title: t("pcWorkstation"),
           image: categoryImages.workstation ?? workstationProducts[0]?.thumbnail_url ?? fallbackSectionImage,
           href: `/products?category=${workstationCategorySlug}`,
-          buttonText: "Shop Workstations",
+          buttonText: t("shopWorkstations"),
         }}
         className="bg-white"
       />
 
       {/* 5. Laptop */}
       <CategorySection
-        title="Laptop"
+        title={t("laptop")}
         products={laptopProducts}
         maxItems={4}
         featuredCard={{
-          title: "Laptop",
+          title: t("laptop"),
           image: categoryImages.laptops ?? laptopProducts[0]?.thumbnail_url ?? fallbackSectionImage,
           href: "/products?category=laptops",
-          buttonText: "Shop Laptops",
+          buttonText: t("shopLaptops"),
         }}
         className="bg-white"
       />
 
       {/* 6. Monitor */}
       <CategorySection
-        title="Monitor"
+        title={t("monitor")}
         products={monitorProducts}
         maxItems={4}
         featuredCard={{
-          title: "Monitor",
+          title: t("monitor"),
           image: categoryImages.monitors ?? monitorProducts[0]?.thumbnail_url ?? fallbackSectionImage,
           href: "/products?category=monitors",
-          buttonText: "Shop Monitors",
+          buttonText: t("shopMonitors"),
         }}
         className="bg-white"
       />

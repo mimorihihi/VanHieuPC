@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { FormEvent, useState } from "react"
+import { useTranslations } from "next-intl"
 import { SiteHeader } from "@/components/site-header"
 import { SupportFeature } from "@/components/home/support-features"
 import { SiteFooter } from "@/components/site-footer"
@@ -21,6 +22,9 @@ type GuestCartItem = {
 
 export default function LoginPage() {
   const router = useRouter()
+  const commonT = useTranslations("Auth.common")
+  const loginT = useTranslations("Auth.login")
+  const validationT = useTranslations("Auth.validation")
   const [values, setValues] = useState<LoginValues>({ email: "", password: "" })
   const [errors, setErrors] = useState<LoginErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -38,13 +42,13 @@ export default function LoginPage() {
     const nextErrors: LoginErrors = {}
 
     if (!values.email.trim()) {
-      nextErrors.email = "Email is required."
+      nextErrors.email = validationT("emailRequired")
     } else if (!/\S+@\S+\.\S+/.test(values.email)) {
-      nextErrors.email = "Email format is invalid."
+      nextErrors.email = validationT("emailInvalid")
     }
 
     if (!values.password.trim()) {
-      nextErrors.password = "Password is required."
+      nextErrors.password = validationT("passwordRequired")
     }
 
     return nextErrors
@@ -74,7 +78,7 @@ export default function LoginPage() {
         })
         const data = await response.json()
         if (!response.ok) {
-          setFormError(data.error ?? "Login failed")
+          setFormError(data.error ?? loginT("fallbackError"))
           return
         }
 
@@ -110,10 +114,10 @@ export default function LoginPage() {
             // Keep login success flow even if merge fails.
           }
         }
-        setFormSuccess(`Welcome ${data.user?.name ?? ""}`)
+        setFormSuccess(loginT("welcome", { name: data.user?.name ?? "" }))
         setTimeout(() => router.push("/dashboard"), 600)
       } catch {
-        setFormError("Cannot connect to server")
+        setFormError(commonT("cannotConnect"))
       } finally {
         setIsSubmitting(false)
       }
@@ -128,18 +132,18 @@ export default function LoginPage() {
         <section className="container mx-auto px-4 py-10">
           <div className="mb-4 flex items-center gap-2 text-[11px] text-zinc-500">
             <Link href="/" className="hover:text-zinc-900">
-              Home
+              {commonT("home")}
             </Link>
             <span>&bull;</span>
-            <span className="text-zinc-700">Login</span>
+            <span className="text-zinc-700">{loginT("breadcrumb")}</span>
           </div>
 
-          <h1 className="mb-6 text-4xl font-semibold tracking-tight text-zinc-900">Customer Login</h1>
+          <h1 className="mb-6 text-4xl font-semibold tracking-tight text-zinc-900">{loginT("title")}</h1>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <section className="rounded bg-zinc-100 p-6">
-              <h2 className="text-lg font-semibold text-zinc-900">Registered Customers</h2>
-              <p className="mt-3 text-xs text-zinc-600">If you have an account, sign in with your email address.</p>
+              <h2 className="text-lg font-semibold text-zinc-900">{loginT("registeredTitle")}</h2>
+              <p className="mt-3 text-xs text-zinc-600">{loginT("registeredDesc")}</p>
 
               <form onSubmit={handleSubmit} className="mt-5 space-y-4" noValidate>
                 {formError ? (
@@ -150,12 +154,12 @@ export default function LoginPage() {
                 ) : null}
                 <div className="space-y-1.5">
                   <label htmlFor="email" className="text-xs font-semibold text-zinc-900">
-                    Email <span className="text-red-500">*</span>
+                    {commonT("email")} <span className="text-red-500">{commonT("requiredMark")}</span>
                   </label>
                   <input
                     id="email"
                     type="email"
-                    placeholder="Your Email"
+                    placeholder={loginT("emailPlaceholder")}
                     value={values.email}
                     onChange={(event) => handleChange("email", event.target.value)}
                     className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900"
@@ -165,12 +169,12 @@ export default function LoginPage() {
 
                 <div className="space-y-1.5">
                   <label htmlFor="password" className="text-xs font-semibold text-zinc-900">
-                    Password <span className="text-red-500">*</span>
+                    {commonT("password")} <span className="text-red-500">{commonT("requiredMark")}</span>
                   </label>
                   <input
                     id="password"
                     type="password"
-                    placeholder="Your Password"
+                    placeholder={loginT("passwordPlaceholder")}
                     value={values.password}
                     onChange={(event) => handleChange("password", event.target.value)}
                     className="h-11 w-full rounded border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900"
@@ -184,29 +188,29 @@ export default function LoginPage() {
                     disabled={isSubmitting}
                     className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-900 px-8 text-sm font-semibold text-white transition-colors hover:bg-zinc-800"
                   >
-                    {isSubmitting ? "Signing in..." : "Sign In"}
+                    {isSubmitting ? loginT("submitting") : loginT("submit")}
                   </button>
                   <a href="#" className="text-xs font-medium text-zinc-900 hover:underline">
-                    Forgot Your Password?
+                    {loginT("forgotPassword")}
                   </a>
                 </div>
               </form>
             </section>
 
             <section className="rounded bg-zinc-100 p-6">
-              <h2 className="text-lg font-semibold text-zinc-900">New Customer?</h2>
-              <p className="mt-3 text-xs text-zinc-600">Creating an account has many benefits:</p>
+              <h2 className="text-lg font-semibold text-zinc-900">{loginT("newCustomerTitle")}</h2>
+              <p className="mt-3 text-xs text-zinc-600">{loginT("newCustomerDesc")}</p>
               <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-zinc-700">
-                <li>Check out faster</li>
-                <li>Keep more than one address</li>
-                <li>Track orders and more</li>
+                <li>{loginT("benefitCheckout")}</li>
+                <li>{loginT("benefitAddress")}</li>
+                <li>{loginT("benefitOrders")}</li>
               </ul>
 
               <Link
                 href="/register"
                 className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-blue-600 px-8 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
               >
-                Create An Account
+                {loginT("createAccount")}
               </Link>
             </section>
           </div>

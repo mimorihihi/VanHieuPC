@@ -1,6 +1,10 @@
-import React from "react"
+"use client"
+
+import { useTranslations } from "next-intl"
 
 export function PromoBanner() {
+  const t = useTranslations("Home")
+
   return (
     <div className="w-full border-y border-zinc-200 bg-[linear-gradient(90deg,#f8fafc_0%,#eef4ff_45%,#f8fafc_100%)]">
       <div className="container mx-auto flex flex-col items-center justify-between gap-3 px-4 py-4 text-center sm:flex-row sm:text-left">
@@ -10,10 +14,10 @@ export function PromoBanner() {
           </div>
           <div>
             <p className="text-sm font-semibold tracking-tight text-zinc-900">
-              Own it now, pay later for up to 6 months.
+              {t("promoTitle")}
             </p>
             <p className="text-xs text-zinc-500">
-              Flexible checkout for monitors, laptops and custom build orders.
+              {t("promoDesc")}
             </p>
           </div>
         </div>
@@ -21,7 +25,7 @@ export function PromoBanner() {
           href="#"
           className="inline-flex rounded-full border border-blue-200 bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-50"
         >
-          Learn more
+          {t("learnMore")}
         </a>
       </div>
     </div>

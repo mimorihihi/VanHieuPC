@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { FormEvent, useState } from "react"
+import { useTranslations } from "next-intl"
 import { Clock3, Mail, MapPin, Phone } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SupportFeature } from "@/components/home/support-features"
@@ -17,6 +18,9 @@ type ContactValues = {
 type ContactErrors = Partial<Record<keyof ContactValues, string>>
 
 export default function ContactPage() {
+  const commonT = useTranslations("Auth.common")
+  const t = useTranslations("Contact")
+  const validationT = useTranslations("Contact.validation")
   const [values, setValues] = useState<ContactValues>({
     name: "",
     email: "",
@@ -36,23 +40,23 @@ export default function ContactPage() {
     const nextErrors: ContactErrors = {}
 
     if (!values.name.trim()) {
-      nextErrors.name = "Name is required."
+      nextErrors.name = validationT("nameRequired")
     }
 
     if (!values.email.trim()) {
-      nextErrors.email = "Email is required."
+      nextErrors.email = validationT("emailRequired")
     } else if (!/\S+@\S+\.\S+/.test(values.email)) {
-      nextErrors.email = "Email format is invalid."
+      nextErrors.email = validationT("emailInvalid")
     }
 
     if (values.phone.trim() && !/^[0-9+\-\s()]{8,20}$/.test(values.phone)) {
-      nextErrors.phone = "Phone number format is invalid."
+      nextErrors.phone = validationT("phoneInvalid")
     }
 
     if (!values.message.trim()) {
-      nextErrors.message = "Message is required."
+      nextErrors.message = validationT("messageRequired")
     } else if (values.message.trim().length < 10) {
-      nextErrors.message = "Message should be at least 10 characters."
+      nextErrors.message = validationT("messageMin")
     }
 
     return nextErrors
@@ -71,17 +75,17 @@ export default function ContactPage() {
         <section className="container mx-auto px-4 py-10">
           <div className="mb-4 flex items-center gap-2 text-[11px] text-zinc-500">
             <Link href="/" className="hover:text-blue-600">
-              Home
+              {commonT("home")}
             </Link>
             <span>&bull;</span>
-            <span className="text-zinc-700">Contact Us</span>
+            <span className="text-zinc-700">{t("breadcrumb")}</span>
           </div>
 
-          <h1 className="mb-4 text-4xl font-semibold tracking-tight text-zinc-900">Contact Us</h1>
+          <h1 className="mb-4 text-4xl font-semibold tracking-tight text-zinc-900">{t("title")}</h1>
           <p className="max-w-2xl text-sm leading-7 text-zinc-600">
-            We love hearing from you, our shop customers.
+            {t("introLine1")}
             <br />
-            Please contact us and we will make sure to get back to you as soon as we possibly can.
+            {t("introLine2")}
           </p>
 
           <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -89,12 +93,12 @@ export default function ContactPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <label htmlFor="name" className="text-xs font-semibold text-zinc-900">
-                    Your Name <span className="text-red-500">*</span>
+                    {t("name")} <span className="text-red-500">{commonT("requiredMark")}</span>
                   </label>
                   <input
                     id="name"
                     type="text"
-                    placeholder="Your Name"
+                    placeholder={t("namePlaceholder")}
                     value={values.name}
                     onChange={(event) => handleChange("name", event.target.value)}
                     className="h-11 w-full rounded border border-zinc-300 px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600"
@@ -103,12 +107,12 @@ export default function ContactPage() {
                 </div>
                 <div className="space-y-1.5">
                   <label htmlFor="email" className="text-xs font-semibold text-zinc-900">
-                    Your Email <span className="text-red-500">*</span>
+                    {t("email")} <span className="text-red-500">{commonT("requiredMark")}</span>
                   </label>
                   <input
                     id="email"
                     type="email"
-                    placeholder="Your Email"
+                    placeholder={t("emailPlaceholder")}
                     value={values.email}
                     onChange={(event) => handleChange("email", event.target.value)}
                     className="h-11 w-full rounded border border-zinc-300 px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600"
@@ -119,12 +123,12 @@ export default function ContactPage() {
 
               <div className="space-y-1.5">
                 <label htmlFor="phone" className="text-xs font-semibold text-zinc-900">
-                  Your Phone Number
+                  {t("phone")}
                 </label>
                 <input
                   id="phone"
                   type="text"
-                  placeholder="Your Phone"
+                  placeholder={t("phonePlaceholder")}
                   value={values.phone}
                   onChange={(event) => handleChange("phone", event.target.value)}
                   className="h-11 w-full rounded border border-zinc-300 px-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600"
@@ -134,12 +138,12 @@ export default function ContactPage() {
 
               <div className="space-y-1.5">
                 <label htmlFor="message" className="text-xs font-semibold text-zinc-900">
-                  What&apos;s on your mind? <span className="text-red-500">*</span>
+                  {t("message")} <span className="text-red-500">{commonT("requiredMark")}</span>
                 </label>
                 <textarea
                   id="message"
                   rows={8}
-                  placeholder="Just us a note and we'll get back to you as quickly as possible"
+                  placeholder={t("messagePlaceholder")}
                   value={values.message}
                   onChange={(event) => handleChange("message", event.target.value)}
                   className="w-full rounded border border-zinc-300 px-3 py-3 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-blue-600"
@@ -151,7 +155,7 @@ export default function ContactPage() {
                 type="submit"
                 className="inline-flex h-11 items-center justify-center rounded-full bg-blue-600 px-8 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
               >
-                Submit
+                {t("submit")}
               </button>
             </form>
 
@@ -160,7 +164,7 @@ export default function ContactPage() {
                 <div className="flex items-start gap-3">
                   <MapPin className="mt-0.5 h-5 w-5 text-zinc-900" />
                   <div>
-                    <h2 className="text-sm font-semibold text-zinc-900">Address:</h2>
+                    <h2 className="text-sm font-semibold text-zinc-900">{t("addressLabel")}</h2>
                     <p className="mt-1 text-xs leading-5 text-zinc-600">1234 Street Adress City Address, 1234</p>
                   </div>
                 </div>
@@ -168,7 +172,7 @@ export default function ContactPage() {
                 <div className="flex items-start gap-3">
                   <Phone className="mt-0.5 h-5 w-5 text-zinc-900" />
                   <div>
-                    <h2 className="text-sm font-semibold text-zinc-900">Phone:</h2>
+                    <h2 className="text-sm font-semibold text-zinc-900">{t("phoneLabel")}</h2>
                     <p className="mt-1 text-xs leading-5 text-zinc-600">(00) 1234 5678</p>
                   </div>
                 </div>
@@ -176,17 +180,17 @@ export default function ContactPage() {
                 <div className="flex items-start gap-3">
                   <Clock3 className="mt-0.5 h-5 w-5 text-zinc-900" />
                   <div>
-                    <h2 className="text-sm font-semibold text-zinc-900">We are open:</h2>
-                    <p className="mt-1 text-xs leading-5 text-zinc-600">Monday - Thursday: 9:00 AM - 5:30 PM</p>
-                    <p className="text-xs leading-5 text-zinc-600">Friday: 9:00 AM - 6:00 PM</p>
-                    <p className="text-xs leading-5 text-zinc-600">Saturday: 11:00 AM - 5:00 PM</p>
+                    <h2 className="text-sm font-semibold text-zinc-900">{t("openLabel")}</h2>
+                    <p className="mt-1 text-xs leading-5 text-zinc-600">{t("hoursMonday")}</p>
+                    <p className="text-xs leading-5 text-zinc-600">{t("hoursFriday")}</p>
+                    <p className="text-xs leading-5 text-zinc-600">{t("hoursSaturday")}</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
                   <Mail className="mt-0.5 h-5 w-5 text-zinc-900" />
                   <div>
-                    <h2 className="text-sm font-semibold text-zinc-900">E-mail:</h2>
+                    <h2 className="text-sm font-semibold text-zinc-900">{t("emailLabel")}</h2>
                     <a href="mailto:shop@email.com" className="mt-1 block text-xs text-blue-600 hover:underline">
                       shop@email.com
                     </a>
