@@ -1,6 +1,13 @@
 import { query } from "@/lib/db"
 import { extractBudgetRange, normalizeText } from "../shared/text-utils"
-import type { ChatMessageRow, ChatbotToolName } from "../shared/types"
+import type {
+  ChatIntent,
+  ChatMessageRow,
+  ChatbotToolName,
+  ConversationState,
+  IntentEntities,
+  ToolRoute,
+} from "../shared/types"
 
 type ProductContextItem = {
   id?: string
@@ -24,6 +31,15 @@ export type ChatContext = {
   lastMinPrice?: number
   lastMaxPrice?: number
   lastUseCase?: string
+  lastProductType?: ToolRoute["params"]["productType"]
+  lastProductCategory?: string
+  conversationState?: ConversationState
+  pendingIntent?: ChatIntent
+  pendingEntities?: IntentEntities
+  pendingToolName?: ChatbotToolName
+  pendingParams?: ToolRoute["params"]
+  pendingQuestion?: string
+  pendingReason?: string
 }
 
 function parseMetadata(metadata: unknown): StoredChatMetadata | null {
@@ -52,6 +68,32 @@ function mergeContext(base: ChatContext, next?: ChatContext) {
   if (typeof next.lastMinPrice === "number") merged.lastMinPrice = next.lastMinPrice
   if (typeof next.lastMaxPrice === "number") merged.lastMaxPrice = next.lastMaxPrice
   if (next.lastUseCase) merged.lastUseCase = next.lastUseCase
+  if (next.lastProductType) merged.lastProductType = next.lastProductType
+  if (next.lastProductCategory) merged.lastProductCategory = next.lastProductCategory
+  if (next.conversationState) merged.conversationState = next.conversationState
+
+  if (next.conversationState === "IDLE") {
+    delete merged.pendingIntent
+    delete merged.pendingEntities
+    delete merged.pendingToolName
+    delete merged.pendingParams
+    delete merged.pendingQuestion
+    delete merged.pendingReason
+    return merged
+  }
+
+  if (next.pendingIntent === null) delete merged.pendingIntent
+  else if (next.pendingIntent) merged.pendingIntent = next.pendingIntent
+  if (next.pendingEntities === null) delete merged.pendingEntities
+  else if (next.pendingEntities) merged.pendingEntities = next.pendingEntities
+  if (next.pendingToolName === null) delete merged.pendingToolName
+  else if (next.pendingToolName) merged.pendingToolName = next.pendingToolName
+  if (next.pendingParams === null) delete merged.pendingParams
+  else if (next.pendingParams) merged.pendingParams = next.pendingParams
+  if (next.pendingQuestion === null) delete merged.pendingQuestion
+  else if (next.pendingQuestion) merged.pendingQuestion = next.pendingQuestion
+  if (next.pendingReason === null) delete merged.pendingReason
+  else if (next.pendingReason) merged.pendingReason = next.pendingReason
 
   return merged
 }
@@ -123,6 +165,46 @@ function isProductContextItem(product: ProductContextItem | null): product is Pr
   return Boolean(product)
 }
 
+/**
+ * Suy productType/category/useCase từ category_name của các sản phẩm kết quả.
+ * Đây là nguồn context bền nhất: luôn có dữ liệu kể cả lượt follow-up budget-only
+ * ("20tr") khi LLM lẫn regex đều không trích được loại sản phẩm từ câu chữ.
+ */
+function inferFacetsFromResultRows(data: unknown[]): ChatContext {
+  const counts = new Map<string, number>()
+
+  for (const row of data) {
+    if (!isRecord(row)) continue
+    const category = readString(row.category_name)
+    if (!category) continue
+    counts.set(category, (counts.get(category) ?? 0) + 1)
+  }
+
+  if (!counts.size) return {}
+
+  // Majority vote: category xuất hiện nhiều nhất trong tập kết quả.
+  const dominantCategory = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0]
+  const normalized = normalizeText(dominantCategory)
+
+  if (/laptop/.test(normalized)) {
+    return { lastProductType: "Laptop", lastProductCategory: dominantCategory }
+  }
+  if (/monitor|man hinh/.test(normalized)) {
+    return { lastProductType: "Monitor", lastProductCategory: dominantCategory }
+  }
+  if (/do hoa|lam viec|workstation/.test(normalized)) {
+    return { lastProductType: "PC", lastProductCategory: dominantCategory, lastUseCase: "render do hoa thiet ke" }
+  }
+  if (/gaming|game/.test(normalized)) {
+    return { lastProductType: "PC", lastProductCategory: dominantCategory, lastUseCase: "gaming" }
+  }
+  if (/\bpc\b|may bo|desktop/.test(normalized)) {
+    return { lastProductType: "PC", lastProductCategory: dominantCategory }
+  }
+
+  return { lastProductCategory: dominantCategory }
+}
+
 export function extractContextFromToolResult(toolName: ChatbotToolName | undefined, data: unknown): ChatContext | undefined {
   if (!toolName || !data) return undefined
 
@@ -151,6 +233,7 @@ export function extractContextFromToolResult(toolName: ChatbotToolName | undefin
       lastProductId: products[0].id,
       lastProductName: products[0].name,
       lastProducts: products.slice(0, 5),
+      ...inferFacetsFromResultRows(data),
     }
   }
 

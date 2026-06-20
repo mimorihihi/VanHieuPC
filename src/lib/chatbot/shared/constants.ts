@@ -22,6 +22,36 @@ export const FAQ_FALLBACK = [
 export const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash"
 export const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
 
+/**
+ * Bật/tắt response-composer: LLM viết lại kết quả tool thành câu trả lời tự nhiên.
+ * Mặc định bật. Tắt bằng CHATBOT_COMPOSE_RESPONSE=false trong .env.
+ */
+export const ENABLE_RESPONSE_COMPOSER = process.env.CHATBOT_COMPOSE_RESPONSE !== "false"
+
+export const MACHINE_CATEGORIES = ["pc gaming", "pc do hoa", "lam viec", "workstation", "laptop", "monitor", "man hinh"] as const
+
+export const PART_CATEGORIES = ["vga", "ram", "components", "linh kien", "phu kien"] as const
+
+export const COMPONENT_LEXICON = [
+  "ram",
+  "vga",
+  "card man hinh",
+  "card do hoa",
+  "gpu",
+  "ssd",
+  "hdd",
+  "chuot",
+  "ban phim",
+  "keyboard",
+  "mouse",
+  "tai nghe",
+  "headset",
+  "psu",
+  "mainboard",
+  "cpu",
+  "tan nhiet",
+] as const
+
 export const PRODUCT_CATEGORY_HINTS = [
   {
     category: "PC Gaming",

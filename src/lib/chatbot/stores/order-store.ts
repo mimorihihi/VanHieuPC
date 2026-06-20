@@ -2,14 +2,15 @@ import { query } from "@/lib/db"
 import type { OrderLookupRow } from "../shared/types"
 
 export async function checkOrderStatus(orderNumber: string) {
-  if (!orderNumber) return null
+  const normalizedOrderNumber = orderNumber.trim().replace(/^#/, "").toUpperCase()
+  if (!normalizedOrderNumber) return null
 
   const [rows] = await query<OrderLookupRow[]>(
     `SELECT id, order_number, status, payment_status, total, created_at
      FROM orders
-     WHERE order_number = ?
+     WHERE UPPER(order_number) = ?
      LIMIT 1`,
-    [orderNumber]
+    [normalizedOrderNumber]
   )
 
   const order = rows[0]

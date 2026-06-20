@@ -21,10 +21,34 @@ export function formatProductSearchReply(products: Array<{
   brand_name?: string | null
   category_name?: string | null
 }>) {
-  const preview = products.slice(0, 3).map((product) => formatProductLabel(product)).join(", ")
-  return products.length > 3
-    ? `Mình tìm thấy ${products.length} sản phẩm phù hợp. Nổi bật gồm: ${preview}.`
-    : `Mình tìm thấy ${products.length} sản phẩm phù hợp: ${preview}.`
+  const list = products
+    .slice(0, 5)
+    .map((product, index) => `${index + 1}. ${formatProductLabel(product)}`)
+    .join("\n")
+
+  return [
+    `Mình tìm thấy ${products.length} sản phẩm phù hợp:`,
+    "",
+    list,
+    "",
+    "Bạn muốn xem giá, tồn kho hoặc lọc thêm theo ngân sách không?",
+  ].join("\n")
+}
+
+function formatBudgetCriterion(intent: ProductRecommendationIntent) {
+  if (intent.minPrice && intent.maxPrice) {
+    return `khoảng ${formatCurrency(intent.minPrice)} - ${formatCurrency(intent.maxPrice)}`
+  }
+
+  if (intent.maxPrice) {
+    return intent.budgetMode === "approx"
+      ? `ngân sách khoảng ${formatCurrency(intent.maxPrice)}`
+      : `ngân sách tối đa ${formatCurrency(intent.maxPrice)}`
+  }
+
+  if (intent.minPrice) return `từ ${formatCurrency(intent.minPrice)}`
+
+  return null
 }
 
 export function formatRecommendationReply(
@@ -38,14 +62,9 @@ export function formatRecommendationReply(
   }>,
   intent: ProductRecommendationIntent
 ) {
-  const displayBudget = intent.minPrice && intent.maxPrice
-    ? Math.round((intent.minPrice + intent.maxPrice) / 2)
-    : null
   const criteria = [
     intent.category ? `nhóm ${intent.category}` : null,
-    displayBudget ? `ngân sách khoảng ${formatCurrency(displayBudget)}` : null,
-    !intent.minPrice && intent.maxPrice ? `ngân sách tối đa ${formatCurrency(intent.maxPrice)}` : null,
-    intent.minPrice && !intent.maxPrice ? `từ ${formatCurrency(intent.minPrice)}` : null,
+    formatBudgetCriterion(intent),
   ].filter(Boolean)
   const intro = criteria.length
     ? `Dựa trên ${criteria.join(", ")}, mình gợi ý các lựa chọn còn phù hợp trong shop:`
@@ -55,11 +74,21 @@ export function formatRecommendationReply(
     .map((product, index) => {
       const price = product.sale_price ?? product.price
       const stockText = product.stock > 0 ? "còn hàng" : "cần kiểm tra tồn kho"
-      return `${index + 1}. ${formatProductLabel(product)} - ${formatCurrency(price)} (${stockText})`
+      return [
+        `${index + 1}. ${formatProductLabel(product)}`,
+        `   Giá: ${formatCurrency(price)}`,
+        `   Tình trạng: ${stockText}`,
+      ].join("\n")
     })
-    .join("\n")
+    .join("\n\n")
 
-  return `${intro}\n${list}\nBạn muốn mình tư vấn kỹ hơn theo game/phần mềm sử dụng hoặc so sánh các mẫu này không?`
+  return [
+    intro,
+    "",
+    list,
+    "",
+    "Bạn muốn mình tư vấn kỹ hơn theo game/phần mềm sử dụng hoặc so sánh các mẫu này không?",
+  ].join("\n")
 }
 
 export function formatProductDetailReply(product: {
@@ -72,16 +101,15 @@ export function formatProductDetailReply(product: {
   variants?: Array<{ name: string; stock: number; is_active: boolean }>
 }) {
   const intro = formatProductLabel(product)
-  const priceText = product.sale_price
-    ? `${intro} hiện có giá ${formatCurrency(product.sale_price)}. Giá niêm yết là ${formatCurrency(product.price)}.`
-    : `${intro} hiện có giá ${formatCurrency(product.price)}.`
-  const descriptionText = product.short_description ? ` ${product.short_description}` : ""
   const activeVariants = Array.isArray(product.variants) ? product.variants.filter((variant) => variant.is_active) : []
-  const variantText = activeVariants.length
-    ? ` Hiện có ${activeVariants.length} biến thể đang hoạt động.`
-    : ""
 
-  return `${priceText}${descriptionText}${variantText}`
+  return [
+    intro,
+    `Giá: ${product.sale_price ? formatCurrency(product.sale_price) : formatCurrency(product.price)}`,
+    product.sale_price ? `Giá niêm yết: ${formatCurrency(product.price)}` : null,
+    product.short_description ? `Mô tả: ${product.short_description}` : null,
+    activeVariants.length ? `Biến thể đang hoạt động: ${activeVariants.length}` : null,
+  ].filter(Boolean).join("\n")
 }
 
 export function formatInventoryReply(inventory: {
@@ -104,6 +132,15 @@ export function formatInventoryReply(inventory: {
     : ""
 
   return topVariants
-    ? `${intro} hiện còn hàng. Tồn kho tổng là ${inventory.stock}. Một số biến thể: ${topVariants}.`
-    : `${intro} hiện còn hàng. Số lượng tồn kho hiện tại là ${inventory.stock}.`
+    ? [
+        intro,
+        `Tình trạng: còn hàng`,
+        `Tồn kho tổng: ${inventory.stock}`,
+        `Một số biến thể: ${topVariants}`,
+      ].join("\n")
+    : [
+        intro,
+        `Tình trạng: còn hàng`,
+        `Tồn kho hiện tại: ${inventory.stock}`,
+      ].join("\n")
 }

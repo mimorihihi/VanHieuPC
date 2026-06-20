@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:demo-products": "node --env-file=.env scripts/seed-demo-products.mjs"
+    "seed:demo-products": "node --env-file=.env scripts/seed-demo-products.mjs",
+    "eval:retrieval": "node --env-file=.env --import tsx scripts/retrieval-eval.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.65",
@@ -42,6 +43,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
+    "tsx": "^4.22.4",
     "typescript": "^5"
   }
 }

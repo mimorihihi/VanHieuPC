@@ -43,6 +43,12 @@ export function getMeaningfulTokens(message: string) {
     "a",
     "ah",
     "ua",
+    "may",
+    "maytinh",
+    "do",
+    "can",
+    "tu",
+    "van",
   ])
 
   return tokenizeText(message).filter((token) => !stopwords.has(token))
@@ -68,36 +74,43 @@ export function parseVietnameseAmount(rawValue: string, unit?: string) {
 
 export function extractBudgetRange(message: string) {
   const normalized = normalizeText(message)
-  const budget: { minPrice?: number; maxPrice?: number } = {}
-  const rangeMatch = normalized.match(/(?:tu|khoang)?\s*(\d+(?:[.,]\d+)?)\s*(tr|trieu|m|million)?\s*(?:-|den|toi)\s*(\d+(?:[.,]\d+)?)\s*(tr|trieu|m|million)?/)
+  const budget: { minPrice?: number; maxPrice?: number; budgetMode?: "approx" | "max" | "min" | "range" } = {}
+  const rangeMatch = normalized.match(/(?:^|\b)(?:tu|khoang)?\s*(\d+(?:[.,]\d+)?)\s*(tr|trieu|m|million)?\s*(?:-|den|toi)\s*(\d+(?:[.,]\d+)?)\s*(tr|trieu|m|million)?/)
 
   if (rangeMatch) {
     const firstUnit = rangeMatch[2] || rangeMatch[4]
     const secondUnit = rangeMatch[4] || rangeMatch[2]
     budget.minPrice = parseVietnameseAmount(rangeMatch[1], firstUnit)
     budget.maxPrice = parseVietnameseAmount(rangeMatch[3], secondUnit)
+    budget.budgetMode = "range"
     return budget
   }
 
+  const priceText = normalized.replace(/\b(?:2k|4k|8k|720p|1080p|144hz|165hz|180hz|240hz|360hz)\b/g, " ")
   const amountMatch =
-    normalized.match(/(\d+(?:[.,]\d+)?)\s*(tr|trieu|m|million|k|nghin)/) ??
-    normalized.match(/(\d+(?:[.,]\d+)?)\s*(vnd|dong)/) ??
-    normalized.match(/(\d+(?:[.,]\d+)?)/)
+    priceText.match(/(\d+(?:[.,]\d+)?)\s*(tr|trieu|m|million|k|nghin)/) ??
+    priceText.match(/(\d+(?:[.,]\d+)?)\s*(vnd|dong)/) ??
+    priceText.match(/(\d+(?:[.,]\d+)?)/)
   if (!amountMatch) return budget
 
-  const hasPriceContext = /(gia|ngan sach|tam|khoang|duoi|tren|toi da|toi thieu|khong qua|trieu|vnd|dong)/.test(normalized)
+  const hasPriceContext = /\b(gia|ngan sach|tam|khoang|duoi|tren|toi da|toi thieu|khong qua|trieu|vnd|dong)\b/.test(normalized)
   if (!amountMatch[2] && !hasPriceContext) return budget
 
   const amount = parseVietnameseAmount(amountMatch[1], amountMatch[2])
   if (!amount) return budget
 
-  if (/(duoi|toi da|max|khong qua|nho hon|tam duoi)/.test(normalized)) {
+  if (/\b(tam|khoang)\b/.test(normalized)) {
     budget.maxPrice = amount
-  } else if (/(tren|tu|toi thieu|min|lon hon)/.test(normalized)) {
+    budget.budgetMode = "approx"
+  } else if (/\b(duoi|toi da|max|khong qua|nho hon|tam duoi)\b/.test(normalized)) {
+    budget.maxPrice = amount
+    budget.budgetMode = "max"
+  } else if (/\b(tren|tu|toi thieu|min|lon hon)\b/.test(normalized)) {
     budget.minPrice = amount
+    budget.budgetMode = "min"
   } else {
-    budget.minPrice = Math.max(0, Math.round(amount * 0.85))
-    budget.maxPrice = Math.round(amount * 1.15)
+    budget.maxPrice = amount
+    budget.budgetMode = "max"
   }
 
   return budget

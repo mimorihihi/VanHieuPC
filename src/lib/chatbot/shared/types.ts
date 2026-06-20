@@ -15,14 +15,72 @@ export type ToolRoute = {
   params: {
     query?: string
     product?: string
+    productType?: "PC" | "Laptop" | "Monitor"
+    usage?: "gaming" | "workstation" | "office"
     orderNumber?: string
     useCase?: string
     category?: string
+    categorySlug?: string
+    categoryIds?: string[]
+    allowedCategories?: string[]
+    forbiddenCategories?: string[]
     minPrice?: number
     maxPrice?: number
+    budgetMode?: "approx" | "max" | "min" | "range"
   }
   confidence: number
   reason?: string
+}
+
+export type ChatIntent =
+  | "search_product"
+  | "recommend_product"
+  | "ask_product_detail"
+  | "ask_product_price"
+  | "check_inventory"
+  | "ask_faq_policy"
+  | "ask_promotion"
+  | "check_order_status"
+  | "smalltalk"
+  | "unclear"
+  | "out_of_scope"
+
+export type IntentEntities = {
+  query?: string
+  product?: string
+  productType?: "PC" | "Laptop" | "Monitor"
+  usage?: "gaming" | "workstation" | "office"
+  category?: string
+  categorySlug?: string
+  brand?: string
+  useCase?: string
+  minPrice?: number
+  maxPrice?: number
+  budgetMode?: "approx" | "max" | "min" | "range"
+  orderNumber?: string
+}
+
+export type IntentExtractionResult = {
+  intent: ChatIntent
+  entities: IntentEntities
+  confidence: number
+  reason?: string
+  needsClarification?: boolean
+  clarificationQuestion?: string
+}
+
+export type IntentConfidenceAction = "execute_tool" | "clarify" | "fallback"
+
+export type ConversationState = "IDLE" | "AWAITING_CLARIFY" | "AWAITING_CONFIRM"
+
+export type PendingConversationState = {
+  state: ConversationState
+  pendingIntent?: ChatIntent
+  pendingEntities?: IntentEntities
+  pendingToolName?: ChatbotToolName
+  pendingParams?: ToolRoute["params"]
+  pendingQuestion?: string
+  pendingReason?: string
 }
 
 export type ToolExecutionResult = {
@@ -128,8 +186,14 @@ export type OrderLookupRow = RowDataPacket & {
 
 export type ProductRecommendationIntent = {
   query: string
+  productType?: "PC" | "Laptop" | "Monitor"
+  usage?: "gaming" | "workstation" | "office"
   useCase?: string
   category?: string
+  categoryIds?: string[]
+  allowedCategories?: string[]
+  forbiddenCategories?: string[]
   minPrice?: number
   maxPrice?: number
+  budgetMode?: "approx" | "max" | "min" | "range"
 }

@@ -1,5 +1,5 @@
 import { query } from "@/lib/db"
-import { PRODUCT_CATEGORY_HINTS } from "../shared/constants"
+import { COMPONENT_LEXICON, MACHINE_CATEGORIES, PART_CATEGORIES, PRODUCT_CATEGORY_HINTS } from "../shared/constants"
 import { extractBudgetRange, extractProductKeyword, getMeaningfulTokens, normalizeText } from "../shared/text-utils"
 import type { ProductRecommendationIntent, ProductRow } from "../shared/types"
 
@@ -56,10 +56,50 @@ export function isRecommendationMessage(message: string) {
 }
 
 export function buildProductSearchTerms(keyword: string) {
-  const normalizedKeyword = normalizeText(keyword)
-  const tokens = getMeaningfulTokens(keyword)
+  const cleanedKeyword = extractProductKeyword(keyword) || keyword
+  const normalizedKeyword = normalizeText(cleanedKeyword)
+  const tokens = getMeaningfulTokens(cleanedKeyword)
 
   return Array.from(new Set([normalizedKeyword, ...tokens])).filter((term) => term.length >= 2)
+}
+
+const GENERIC_SEARCH_TERMS = new Set([
+  "tim",
+  "kiem",
+  "san",
+  "pham",
+  "hang",
+  "shop",
+  "co",
+  "khong",
+  "gia",
+  "ban",
+  "mua",
+  "xem",
+  "them",
+  "man",
+  "hinh",
+  "monitor",
+  "laptop",
+  "pc",
+  "may",
+  "tinh",
+  "bo",
+])
+
+function getSpecificSearchTerms(keyword: string) {
+  return buildProductSearchTerms(keyword).filter((term) => {
+    if (term.includes(" ")) return false
+    return !GENERIC_SEARCH_TERMS.has(term)
+  })
+}
+
+function productMatchesSpecificTerm(product: ProductRow | ReturnType<typeof mapProductRow>, keyword: string) {
+  const specificTerms = getSpecificSearchTerms(keyword)
+  if (!specificTerms.length) return true
+
+  const haystack = normalizeText(`${product.name} ${product.brand_name ?? ""} ${product.category_name ?? ""} ${product.short_description ?? ""}`)
+  return specificTerms.some((term) => haystack.includes(term))
 }
 
 export function scoreProductMatch(product: ProductRow, keyword: string) {
@@ -104,13 +144,94 @@ export function mapProductRow(product: ProductRow) {
   }
 }
 
-export async function findMatchingProducts(keyword: string, limit = 5) {
+type ProductClass = "machine" | "part"
+
+type ProductSearchLookup = {
+  query: string
+  productType?: ProductRecommendationIntent["productType"]
+  categoryIds?: string[]
+  minPrice?: number
+  maxPrice?: number
+}
+
+function includesAnyNormalized(value: string, terms: readonly string[]) {
+  const normalized = normalizeText(value)
+  return terms.some((term) => normalized.includes(normalizeText(term)))
+}
+
+function matchesAnyToken(value: string, terms: readonly string[]) {
+  const normalized = normalizeText(value)
+  const tokens = new Set(normalized.split(/[^a-z0-9]+/).filter(Boolean))
+
+  return terms.some((term) => {
+    const normalizedTerm = normalizeText(term)
+    if (!normalizedTerm) return false
+    return normalizedTerm.includes(" ") ? normalized.includes(normalizedTerm) : tokens.has(normalizedTerm)
+  })
+}
+
+function classifyProductClass(product: ProductRow | ReturnType<typeof mapProductRow>): ProductClass {
+  const category = product.category_name ?? ""
+  const name = product.name ?? ""
+  const haystack = `${category} ${name}`
+
+  if (includesAnyNormalized(category, PART_CATEGORIES)) return "part"
+  if (includesAnyNormalized(category, MACHINE_CATEGORIES)) return "machine"
+
+  if (includesAnyNormalized(haystack, ["laptop", "may tinh xach tay", "monitor", "man hinh"])) return "machine"
+  if (/\bpc\b|may bo|bo may|desktop|workstation|do hoa/.test(normalizeText(haystack))) return "machine"
+  if (matchesAnyToken(haystack, COMPONENT_LEXICON)) return "part"
+
+  return "machine"
+}
+
+function intentTargetsComponent(intent: Pick<ProductRecommendationIntent, "query" | "category" | "productType">) {
+  const haystack = `${intent.query ?? ""} ${intent.category ?? ""} ${intent.productType ?? ""}`
+  return matchesAnyToken(haystack, COMPONENT_LEXICON)
+}
+
+function intentWantsMachine(intent: ProductRecommendationIntent | ProductSearchLookup) {
+  if (intentTargetsComponent(intent)) return false
+  if (["PC", "Laptop", "Monitor"].includes(intent.productType ?? "")) return true
+
+  const usage = "usage" in intent ? intent.usage : undefined
+  const useCase = "useCase" in intent ? intent.useCase : undefined
+  if (usage || useCase) return true
+
+  return includesAnyNormalized(intent.query ?? "", ["may", "may tinh", "pc", "desktop", "laptop", "man hinh", "monitor"])
+}
+
+function inferMachineProductType(intent: ProductRecommendationIntent | ProductSearchLookup): ProductRecommendationIntent["productType"] | undefined {
+  if (intent.productType) return intent.productType
+
+  const query = normalizeText(intent.query ?? "")
+  if (/laptop|may tinh xach tay/.test(query)) return "Laptop"
+  if (/man hinh|monitor/.test(query)) return "Monitor"
+  if (/\bpc\b|desktop|may bo|bo may|bo pc|may choi game|may gaming|may lam viec|may render|may thiet ke/.test(query)) return "PC"
+
+  return undefined
+}
+
+function dedupeByNormalizedName<T extends { name: string }>() {
+  const seenNames = new Set<string>()
+
+  return (product: T) => {
+    const key = normalizeText(product.name)
+    if (seenNames.has(key)) return false
+    seenNames.add(key)
+    return true
+  }
+}
+
+export async function findMatchingProducts(keyword: string, limit = 5, lookup: Partial<ProductSearchLookup> = {}) {
   if (!keyword) return []
 
   const terms = buildProductSearchTerms(keyword)
   if (!terms.length) return []
 
-  const likeParams = terms.flatMap((term) => {
+  const categoryIds = lookup.categoryIds?.filter(Boolean) ?? []
+
+  const params: Array<string | number> = terms.flatMap((term) => {
     const like = `%${term}%`
     return [like, like, like]
   })
@@ -124,6 +245,13 @@ export async function findMatchingProducts(keyword: string, limit = 5) {
       )`
     )
     .join(" OR ")
+
+  const conditions = [`(${whereClause})`]
+
+  if (categoryIds.length) {
+    conditions.push(`p.category_id IN (${categoryIds.map(() => "?").join(", ")})`)
+    params.push(...categoryIds)
+  }
 
   const [rows] = await query<ProductRow[]>(
     `SELECT
@@ -141,19 +269,27 @@ export async function findMatchingProducts(keyword: string, limit = 5) {
      LEFT JOIN brands br ON br.id = p.brand_id
      LEFT JOIN categories c ON c.id = p.category_id
      WHERE p.is_active = true
-       AND (${whereClause})
+       AND ${conditions.join(" AND ")}
      ORDER BY p.created_at DESC
-     LIMIT 30`,
-    likeParams
+     LIMIT 200`,
+    params
   )
+
+  const wantsMachine = intentWantsMachine({ query: keyword, ...lookup })
+  const inferredProductType = inferMachineProductType({ query: keyword, ...lookup })
 
   return rows
     .map((product) => ({
       ...mapProductRow(product),
       matchScore: scoreProductMatch(product, keyword),
     }))
+    .filter((product) => (wantsMachine ? classifyProductClass(product) !== "part" : true))
+    .filter((product) => (categoryIds.length ? true : matchesProductType(product, inferredProductType)))
+    .filter((product) => isWithinBudget(product, lookup))
+    .filter((product) => productMatchesSpecificTerm(product, keyword))
     .filter((product) => product.matchScore >= 4)
     .sort((a, b) => b.matchScore - a.matchScore)
+    .filter(dedupeByNormalizedName())
     .slice(0, limit)
     .map((product) => ({
       id: product.id,
@@ -174,15 +310,63 @@ export async function findProductByName(keyword: string) {
   return products[0] ?? null
 }
 
-export async function searchProducts(keyword: string) {
-  return findMatchingProducts(keyword, 5)
+export async function searchProducts(params: string | ProductSearchLookup) {
+  const lookup = typeof params === "string" ? { query: params } : params
+  return findMatchingProducts(lookup.query, 5, lookup)
 }
 
 function getEffectivePrice(product: ProductRow | ReturnType<typeof mapProductRow>) {
-  return Number(product.sale_price ?? product.price ?? 0)
+  const salePrice = Number(product.sale_price ?? 0)
+  const basePrice = Number(product.price ?? 0)
+
+  return salePrice > 0 ? salePrice : basePrice
 }
 
-function scoreRecommendedProduct(product: ProductRow, intent: ProductRecommendationIntent) {
+function isWithinBudget(product: ProductRow | ReturnType<typeof mapProductRow>, intent: { minPrice?: number; maxPrice?: number }) {
+  const effectivePrice = getEffectivePrice(product)
+
+  if (intent.minPrice && effectivePrice < intent.minPrice) return false
+  if (intent.maxPrice && effectivePrice > intent.maxPrice) return false
+
+  return true
+}
+
+function getBudgetDistance(product: ProductRow | ReturnType<typeof mapProductRow>, intent: ProductRecommendationIntent) {
+  const effectivePrice = getEffectivePrice(product)
+
+  if (intent.maxPrice) return Math.abs(intent.maxPrice - effectivePrice)
+  if (intent.minPrice) return Math.abs(effectivePrice - intent.minPrice)
+
+  return effectivePrice
+}
+
+function matchesProductType(product: ProductRow | ReturnType<typeof mapProductRow>, productType?: ProductRecommendationIntent["productType"]) {
+  if (!productType) return true
+
+  const category = normalizeText(product.category_name ?? "")
+  const name = normalizeText(product.name ?? "")
+  const haystack = `${category} ${name}`
+
+  if (productType === "Laptop") return /laptop|may tinh xach tay/.test(haystack)
+  if (productType === "Monitor") return /man hinh|monitor/.test(haystack)
+
+  if (productType === "PC") {
+    const isExcluded = /laptop|may tinh xach tay|man hinh|monitor|ssd|hdd|ram|chuot|ban phim|keyboard|mouse|tai nghe|headset|gpu|vga|cpu|mainboard|nguon|psu|case/.test(haystack)
+    const looksLikePc = /\bpc\b|may bo|bo may|desktop|gaming|workstation|do hoa/.test(haystack)
+
+    return looksLikePc && !isExcluded
+  }
+
+  return true
+}
+
+function getUseCaseTokens(useCase?: string) {
+  if (!useCase) return []
+
+  return getMeaningfulTokens(useCase).filter((token) => token.length >= 3)
+}
+
+function scoreRecommendedProduct(product: ProductRow, intent: ProductRecommendationIntent, wantsMachine = intentWantsMachine(intent)) {
   const baseScore = scoreProductMatch(product, intent.query)
   const category = normalizeText(product.category_name ?? "")
   const description = normalizeText(product.short_description ?? "")
@@ -192,29 +376,106 @@ function scoreRecommendedProduct(product: ProductRow, intent: ProductRecommendat
 
   let score = baseScore
 
+  if (wantsMachine && classifyProductClass(product) === "part") score -= 100
+
   if (intent.category && category.includes(normalizeText(intent.category))) score += 18
   if (intent.category && !category.includes(normalizeText(intent.category))) score -= 12
-  if (intent.useCase && haystack.includes(normalizeText(intent.useCase))) score += 8
+
+  const wantsGaming = intent.usage === "gaming"
+  const wantsWorkstation = intent.usage === "workstation"
+  const wantsOffice = intent.usage === "office"
+  const gamingSignal = /gaming|rtx|geforce|rog|tuf|nitro|gtx|144hz|165hz|240hz/.test(haystack)
+  const workstationSignal = /workstation|render|do hoa|thiet ke|quadro|rtx a|threadripper|xeon|creator|nvidia|premiere|autocad|blender/.test(haystack)
+  const officeSignal = /van phong|hoc tap|mong nhe|office|inspiron|vivobook|ideapad|aspire|thinkpad/.test(haystack)
+
+  if (wantsGaming) {
+    if (gamingSignal) score += 16
+    if (workstationSignal && !gamingSignal) score -= 6
+    if (officeSignal && !gamingSignal) score -= 8
+  }
+
+  if (wantsWorkstation) {
+    if (workstationSignal) score += 16
+    if (gamingSignal && !workstationSignal) score -= 6
+    if (officeSignal && !workstationSignal) score -= 8
+  }
+
+  if (wantsOffice) {
+    if (officeSignal) score += 12
+    if (gamingSignal) score -= 6
+    if (workstationSignal) score -= 6
+  }
+
+  if (intent.useCase) {
+    const useCaseTokens = getUseCaseTokens(intent.useCase)
+    const matchedTokens = useCaseTokens.filter((token) => haystack.includes(token))
+    if (matchedTokens.length) score += Math.min(12, matchedTokens.length * 4)
+  }
+
   if (product.stock > 0) score += 6
   if (intent.maxPrice && effectivePrice <= intent.maxPrice) score += 10
+  if (intent.maxPrice && effectivePrice > intent.maxPrice) score -= 100
   if (intent.minPrice && effectivePrice >= intent.minPrice) score += 4
+  if (intent.minPrice && effectivePrice < intent.minPrice) score -= 40
 
   return score
 }
 
+function compareRecommendedProducts(
+  a: ReturnType<typeof mapProductRow> & { matchScore: number },
+  b: ReturnType<typeof mapProductRow> & { matchScore: number },
+  intent: ProductRecommendationIntent
+) {
+  if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore
+  if (b.stock !== a.stock) return b.stock - a.stock
+
+  return getBudgetDistance(a, intent) - getBudgetDistance(b, intent)
+}
+
 export async function recommendProducts(intent: ProductRecommendationIntent, limit = 5) {
+  const wantsMachine = intentWantsMachine(intent)
+  const inferredProductType = inferMachineProductType(intent)
   const terms = buildProductSearchTerms(`${intent.query} ${intent.category ?? ""} ${intent.useCase ?? ""}`)
   const whereParts = ["p.is_active = true"]
   const params: Array<string | number> = []
 
-  // Giữ ngân sách ở phần chấm điểm thay vì khóa cứng SQL để tránh trả rỗng khi không có sản phẩm đúng dải giá.
+  // Ngân sách KHÔNG khóa trong SQL (giữ ứng viên rộng cho scoring), được xử lý ở 2 bước JS:
+  // - scoreRecommendedProduct: thưởng/phạt theo dải giá (ưu tiên SP đúng tầm tiền);
+  // - isWithinBudget (bên dưới): lọc cứng, loại SP ngoài dải giá.
+  // Hệ quả: nếu catalog không có SP đúng dải giá thì trả rỗng (đúng theo dữ liệu).
 
-  if (intent.category && normalizeText(intent.category) !== "workstation") {
-    whereParts.push("COALESCE(c.name, '') LIKE ?")
-    params.push(`%${intent.category}%`)
+  const categoryIds = intent.categoryIds?.filter(Boolean) ?? []
+
+  if (categoryIds.length) {
+    whereParts.push(`p.category_id IN (${categoryIds.map(() => "?").join(", ")})`)
+    params.push(...categoryIds)
+  } else if (intent.productType === "Laptop") {
+    whereParts.push("(COALESCE(c.name, '') LIKE ? OR p.name LIKE ?)")
+    params.push("%Laptop%", "%Laptop%")
+  } else if (intent.productType === "Monitor") {
+    whereParts.push("(COALESCE(c.name, '') LIKE ? OR COALESCE(c.name, '') LIKE ? OR p.name LIKE ? OR p.name LIKE ?)")
+    params.push("%Monitor%", "%Màn hình%", "%Monitor%", "%Màn hình%")
+  } else if (intent.productType === "PC") {
+    whereParts.push(`(
+      COALESCE(c.name, '') LIKE ?
+      OR COALESCE(c.name, '') LIKE ?
+      OR p.name LIKE ?
+      OR p.name LIKE ?
+      OR p.name LIKE ?
+    )`)
+    params.push("%PC%", "%Workstation%", "%PC%", "%Desktop%", "%Máy bộ%")
+    whereParts.push(`(
+      COALESCE(c.name, '') NOT LIKE ?
+      AND p.name NOT LIKE ?
+      AND p.name NOT LIKE ?
+      AND COALESCE(c.name, '') NOT LIKE ?
+      AND p.name NOT LIKE ?
+      AND p.name NOT LIKE ?
+    )`)
+    params.push("%Laptop%", "%Laptop%", "%SSD%", "%SSD%", "%Màn hình%", "%Monitor%")
   }
 
-  const shouldFilterByTerms = terms.length && !intent.category && !intent.useCase && !intent.minPrice && !intent.maxPrice
+  const shouldFilterByTerms = Boolean(terms.length && !categoryIds.length && !intent.productType && !wantsMachine)
 
   if (shouldFilterByTerms) {
     whereParts.push(`(${terms
@@ -243,17 +504,21 @@ export async function recommendProducts(intent: ProductRecommendationIntent, lim
      LEFT JOIN categories c ON c.id = p.category_id
      WHERE ${whereParts.join(" AND ")}
      ORDER BY p.stock DESC, p.created_at DESC
-     LIMIT 40`,
+     LIMIT 200`,
     params
   )
 
   return rows
     .map((product) => ({
       ...mapProductRow(product),
-      matchScore: scoreRecommendedProduct(product, intent),
+      matchScore: scoreRecommendedProduct(product, intent, wantsMachine),
     }))
+    .filter((product) => (wantsMachine ? classifyProductClass(product) !== "part" : true))
+    .filter((product) => (categoryIds.length ? true : matchesProductType(product, inferredProductType)))
+    .filter((product) => isWithinBudget(product, intent))
     .filter((product) => product.matchScore >= 6)
-    .sort((a, b) => b.matchScore - a.matchScore)
+    .sort((a, b) => compareRecommendedProducts(a, b, intent))
+    .filter(dedupeByNormalizedName())
     .slice(0, limit)
     .map((product) => ({
       id: product.id,
