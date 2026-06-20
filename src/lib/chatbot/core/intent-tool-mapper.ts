@@ -1,6 +1,6 @@
 import type { ChatContext } from "../stores/context-store"
 import type { IntentExtractionResult, ToolRoute } from "../shared/types"
-import { extractOrderNumber, normalizeText } from "../shared/text-utils"
+import { extractOrderNumber } from "../shared/text-utils"
 import type { NormalizedChatInput } from "./input-normalizer"
 
 export type IntentToolMappingResult = {
@@ -73,15 +73,6 @@ function resolveQuery(intentResult: IntentExtractionResult, input: NormalizedCha
   return input.normalized || input.original
 }
 
-function resolveProductType(intentResult: IntentExtractionResult, input: NormalizedChatInput) {
-  const currentText = normalizeText([input.original, input.normalized, resolveEntityQuery(intentResult)].filter(Boolean).join(" "))
-
-  if (/\b(laptop|may tinh xach tay)\b/.test(currentText)) return "Laptop"
-  if (/\b(man hinh|monitor)\b/.test(currentText)) return "Monitor"
-  if (/\b(pc|desktop|may bo|bo pc|bo may)\b/.test(currentText)) return "PC"
-
-  return intentResult.entities.productType
-}
 
 export function mapIntentToToolRoute(
   intentResult: IntentExtractionResult,
@@ -96,7 +87,7 @@ export function mapIntentToToolRoute(
         "recommendProducts",
         {
           query: resolveQuery(intentResult, input),
-          productType: resolveProductType(intentResult, input),
+          productType: intentResult.entities.productType,
           usage: intentResult.entities.usage,
           category: intentResult.entities.category,
           categorySlug: intentResult.entities.categorySlug,
@@ -114,7 +105,7 @@ export function mapIntentToToolRoute(
       "searchProducts",
       {
         query: resolveQuery(intentResult, input),
-        productType: resolveProductType(intentResult, input),
+        productType: intentResult.entities.productType,
         usage: intentResult.entities.usage,
         category: intentResult.entities.category,
         categorySlug: intentResult.entities.categorySlug,
@@ -132,7 +123,7 @@ export function mapIntentToToolRoute(
       "recommendProducts",
       {
         query: resolveQuery(intentResult, input),
-        productType: resolveProductType(intentResult, input),
+        productType: intentResult.entities.productType,
         usage: intentResult.entities.usage,
         category: intentResult.entities.category,
         categorySlug: intentResult.entities.categorySlug,

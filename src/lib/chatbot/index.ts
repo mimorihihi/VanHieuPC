@@ -20,6 +20,7 @@ import {
   normalizeText,
 } from "./shared/text-utils"
 import { OPENROUTER_MODEL, ENABLE_RESPONSE_COMPOSER } from "./shared/constants"
+import { detectProductType, detectUsage, deriveCategory, deriveUseCase } from "./core/signal-detector"
 import type {
   ChatbotApiResponse,
   ChatbotSource,
@@ -178,47 +179,6 @@ function mergeEntitiesFromRouteParams(
   }
 }
 
-function detectProductType(...values: Array<string | undefined>): IntentExtractionResult["entities"]["productType"] {
-  const normalized = values.map((value) => normalizeText(value ?? "")).join(" ")
-
-  if (/(pc|may bo|bo may|desktop)/.test(normalized)) return "PC"
-  if (/(laptop|may tinh xach tay)/.test(normalized)) return "Laptop"
-  if (/(man hinh|monitor)/.test(normalized)) return "Monitor"
-
-  return undefined
-}
-
-function detectUsage(...values: Array<string | undefined>): IntentExtractionResult["entities"]["usage"] {
-  const normalized = values.map((value) => normalizeText(value ?? "")).join(" ")
-
-  if (/(gaming|choi game|game)/.test(normalized)) return "gaming"
-  if (/(workstation|render|do hoa|thiet ke|blender|premiere|photoshop|autocad)/.test(normalized)) return "workstation"
-  if (/(hoc tap|van phong|lap trinh|code)/.test(normalized)) return "office"
-
-  return undefined
-}
-
-function deriveCategory(
-  productType?: IntentExtractionResult["entities"]["productType"],
-  usage?: IntentExtractionResult["entities"]["usage"],
-  fallbackCategory?: string
-) {
-  if (productType === "PC" && usage === "gaming") return "PC Gaming"
-  if (productType === "PC" && usage === "workstation") return "PC Đồ họa"
-  if (productType === "PC") return undefined
-  if (productType === "Laptop") return "Laptop"
-  if (productType === "Monitor") return "Monitor"
-
-  return fallbackCategory
-}
-
-function deriveUseCase(usage?: IntentExtractionResult["entities"]["usage"], fallbackUseCase?: string) {
-  if (usage === "gaming") return "gaming game"
-  if (usage === "workstation") return "render do hoa thiet ke workstation"
-  if (usage === "office") return "hoc tap van phong office"
-
-  return fallbackUseCase
-}
 
 function applyDeterministicEntities(
   intentResult: IntentExtractionResult,

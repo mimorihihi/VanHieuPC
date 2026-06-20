@@ -32,6 +32,18 @@ export const MACHINE_CATEGORIES = ["pc gaming", "pc do hoa", "lam viec", "workst
 
 export const PART_CATEGORIES = ["vga", "ram", "components", "linh kien", "phu kien"] as const
 
+export const PRODUCT_TYPE_SIGNALS = {
+  Laptop: ["laptop", "may tinh xach tay", "lappy"],
+  Monitor: ["man hinh", "monitor"],
+  PC: ["pc", "desktop", "may bo", "bo may", "bo pc", "may choi game", "may gaming", "may render", "may lam viec", "may thiet ke"],
+} as const
+
+export const USAGE_SIGNALS = {
+  gaming: ["gaming", "choi game", "game", "valorant", "lol", "lien minh", "pubg", "cs2", "fps", "esport", "esports"],
+  workstation: ["workstation", "render", "do hoa", "thiet ke", "dung phim", "blender", "premiere", "photoshop", "autocad", "3d", "ai"],
+  office: ["hoc tap", "van phong", "lap trinh", "code"],
+} as const
+
 export const COMPONENT_LEXICON = [
   "ram",
   "vga",

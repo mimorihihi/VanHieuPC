@@ -1,5 +1,6 @@
 import { query } from "@/lib/db"
 import { extractBudgetRange, normalizeText } from "../shared/text-utils"
+import { detectUsage } from "../core/signal-detector"
 import type {
   ChatIntent,
   ChatMessageRow,
@@ -99,20 +100,16 @@ function mergeContext(base: ChatContext, next?: ChatContext) {
 }
 
 function extractUseCaseFromMessage(message: string) {
+  const usage = detectUsage(message)
+  const labels = {
+    gaming: "gaming",
+    workstation: "render và thiết kế đồ họa",
+    office: "học tập, văn phòng hoặc lập trình",
+  } as const
+
+  if (usage) return labels[usage]
+
   const normalized = normalizeText(message)
-
-  if (["render", "do hoa", "thiet ke", "blender", "premiere", "photoshop", "autocad", "workstation"].some((keyword) => normalized.includes(keyword))) {
-    return "render và thiết kế đồ họa"
-  }
-
-  if (["gaming", "choi game", "game", "valorant", "lol", "pubg", "cs2"].some((keyword) => normalized.includes(keyword))) {
-    return "gaming"
-  }
-
-  if (["hoc tap", "van phong", "lap trinh", "code"].some((keyword) => normalized.includes(keyword))) {
-    return "học tập, văn phòng hoặc lập trình"
-  }
-
   if (["laptop", "may tinh xach tay", "mong nhe"].some((keyword) => normalized.includes(keyword))) {
     return "laptop"
   }

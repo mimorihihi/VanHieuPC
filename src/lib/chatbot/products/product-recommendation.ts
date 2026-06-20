@@ -2,7 +2,9 @@ import { query } from "@/lib/db"
 import { COMPONENT_LEXICON, MACHINE_CATEGORIES, PART_CATEGORIES, PRODUCT_CATEGORY_HINTS } from "../shared/constants"
 import { extractBudgetRange, extractProductKeyword, getMeaningfulTokens, normalizeText } from "../shared/text-utils"
 import type { ProductRecommendationIntent, ProductRow } from "../shared/types"
+import { detectProductType } from "../core/signal-detector"
 
+/** @deprecated Main flow uses LLM intent extraction; kept for legacy/eval callers only. */
 export function extractRecommendationIntent(message: string): ProductRecommendationIntent {
   const normalized = normalizeText(message)
   const matchedHint = PRODUCT_CATEGORY_HINTS.find((hint) =>
@@ -18,6 +20,7 @@ export function extractRecommendationIntent(message: string): ProductRecommendat
   }
 }
 
+/** @deprecated Main flow uses LLM intent extraction; kept for legacy/eval callers only. */
 export function isRecommendationMessage(message: string) {
   const normalized = normalizeText(message)
   const hasBuyingIntent = [
@@ -202,14 +205,7 @@ function intentWantsMachine(intent: ProductRecommendationIntent | ProductSearchL
 }
 
 function inferMachineProductType(intent: ProductRecommendationIntent | ProductSearchLookup): ProductRecommendationIntent["productType"] | undefined {
-  if (intent.productType) return intent.productType
-
-  const query = normalizeText(intent.query ?? "")
-  if (/laptop|may tinh xach tay/.test(query)) return "Laptop"
-  if (/man hinh|monitor/.test(query)) return "Monitor"
-  if (/\bpc\b|desktop|may bo|bo may|bo pc|may choi game|may gaming|may lam viec|may render|may thiet ke/.test(query)) return "PC"
-
-  return undefined
+  return intent.productType ?? detectProductType(intent.query ?? "")
 }
 
 function dedupeByNormalizedName<T extends { name: string }>() {
@@ -351,7 +347,16 @@ function matchesProductType(product: ProductRow | ReturnType<typeof mapProductRo
   if (productType === "Monitor") return /man hinh|monitor/.test(haystack)
 
   if (productType === "PC") {
-    const isExcluded = /laptop|may tinh xach tay|man hinh|monitor|ssd|hdd|ram|chuot|ban phim|keyboard|mouse|tai nghe|headset|gpu|vga|cpu|mainboard|nguon|psu|case/.test(haystack)
+    const excludedCategories = [
+      "laptop",
+      "may tinh xach tay",
+      "man hinh",
+      "monitor",
+      ...COMPONENT_LEXICON,
+      "nguon",
+      "case",
+    ]
+    const isExcluded = matchesAnyToken(category, excludedCategories)
     const looksLikePc = /\bpc\b|may bo|bo may|desktop|gaming|workstation|do hoa/.test(haystack)
 
     return looksLikePc && !isExcluded
@@ -443,6 +448,8 @@ export async function recommendProducts(intent: ProductRecommendationIntent, lim
   // - scoreRecommendedProduct: thưởng/phạt theo dải giá (ưu tiên SP đúng tầm tiền);
   // - isWithinBudget (bên dưới): lọc cứng, loại SP ngoài dải giá.
   // Hệ quả: nếu catalog không có SP đúng dải giá thì trả rỗng (đúng theo dữ liệu).
+  // SCALE NOTE: LIMIT 200 an toàn cho catalog demo; khi mỗi loại vượt ~200 SP,
+  // nên nâng cap hoặc đẩy pre-filter ngân sách nới rộng xuống SQL để tránh mất recall.
 
   const categoryIds = intent.categoryIds?.filter(Boolean) ?? []
 
@@ -503,7 +510,6 @@ export async function recommendProducts(intent: ProductRecommendationIntent, lim
      LEFT JOIN brands br ON br.id = p.brand_id
      LEFT JOIN categories c ON c.id = p.category_id
      WHERE ${whereParts.join(" AND ")}
-     ORDER BY p.stock DESC, p.created_at DESC
      LIMIT 200`,
     params
   )

@@ -2,6 +2,7 @@ import type { ChatContext } from "../stores/context-store"
 import type { IntentEntities, PendingConversationState, ToolRoute } from "../shared/types"
 import type { NormalizedChatInput } from "./input-normalizer"
 import { classifyConfirmationAnswerWithLlm, classifyPendingFollowup, extractClarificationEntities } from "../llm/llm-router"
+import { hasProductRequestSignal } from "./signal-detector"
 
 export type ConfirmationAnswer = "confirm" | "reject" | "unclear"
 
@@ -180,10 +181,7 @@ function mergeClarificationEntities(
 }
 
 function hasExplicitProductRequestSignal(input: NormalizedChatInput) {
-  const normalized = input.normalizedForMatching
-
-  return /\b(pc|desktop|may bo|bo pc|bo may|laptop|may tinh xach tay|man hinh|monitor)\b/.test(normalized)
-    || /\b(gaming|choi game|game|valorant|lol|pubg|cs2|workstation|render|do hoa|thiet ke|hoc tap|van phong|lap trinh|code)\b/.test(normalized)
+  return hasProductRequestSignal(input.normalizedForMatching)
 }
 
 function isBudgetOnlyFollowUp(input: NormalizedChatInput) {
